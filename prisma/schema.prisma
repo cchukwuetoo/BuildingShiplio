@@ -1,0 +1,63 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  DRIVER
+  WAREHOUSE
+  SUPER_ADMIN
+}
+
+enum ShipmentStatus {
+  DRAFT
+  PENDING
+}
+
+model User {
+  id           String    @id @default(uuid())
+  firstName    String
+  lastName     String
+  email        String    @unique
+  phone        String    @unique
+  passwordHash String
+  role         UserRole  @default(USER)
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  shipments    Shipment[]
+}
+
+model Shipment {
+  id                 String         @id @default(uuid())
+  userId             String
+  pickupAddress      String
+  pickupCity         String
+  pickupState        String
+  pickupContactName  String
+  pickupPhone        String
+  deliveryAddress    String
+  deliveryCity       String
+  deliveryState      String
+  recipientName      String
+  recipientPhone     String
+  packageType        String
+  description        String
+  estimatedWeight    Float
+  weightUnit         String
+  length             Float?
+  width              Float?
+  height             Float?
+  dimensionUnit      String?
+  isFragile          Boolean
+  declaredValue      Float?
+  status             ShipmentStatus  @default(PENDING)
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  user               User           @relation(fields: [userId], references: [id])
+}
