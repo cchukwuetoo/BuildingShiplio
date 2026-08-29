@@ -1,12 +1,24 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  Inject,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
+import { OTP_SERVICE } from '../otp/otp.module';
 import { UserRole } from '../users/enums/user-role.enum';
 import { ShipmentStatus } from './enums/shipment-status.enum';
 import { CreateShipmentDto } from './dto/create-shipment.dto';
 
 @Injectable()
 export class ShipmentsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(OTP_SERVICE) private readonly otpService: {
+      createAndSendShipmentOtp: (data: { shipmentId: string; userId: string; email: string }) => Promise<any>;
+      verifyShipmentDriverOtp: (userId: string, shipmentId: string, code: string) => Promise<any>;
+    },
+  ) {}
 
   async create(userId: string, dto: CreateShipmentDto, role?: UserRole) {
     if (role && ![UserRole.USER].includes(role)) {
@@ -40,7 +52,17 @@ export class ShipmentsService {
       },
     });
 
-    return shipment;
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    const driverOtp = await this.otpService.createAndSendShipmentOtp({
+      shipmentId: shipment.id,
+      userId,
+      email: user?.email ?? '',
+    });
+
+    return {
+      ...shipment,
+      driverOtp,
+    };
   }
 
   async findAllForUser(userId: string) {
@@ -64,5 +86,9 @@ export class ShipmentsService {
     }
 
     return shipment;
+  }
+
+  async verifyDriverOtp(userId: string, shipmentId: string, code: string) {
+    return this.otpService.verifyShipmentDriverOtp(userId, shipmentId, code);
   }
 }

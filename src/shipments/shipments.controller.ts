@@ -25,6 +25,12 @@ export class ShipmentsController {
     return this.shipmentsService.create(req.user.userId, dto, req.user.role);
   }
 
+  @Post('verify-driver-otp')
+  @Roles(UserRole.USER)
+  async verifyDriverOtp(@Req() req: any, @Body() body: { shipmentId: string; code: string }) {
+    return this.shipmentsService.verifyDriverOtp(req.user.userId, body.shipmentId, body.code);
+  }
+
   @Get()
   @Roles(UserRole.USER)
   async findAll(@Req() req: any) {

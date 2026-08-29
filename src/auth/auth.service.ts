@@ -3,11 +3,13 @@ import {
   ConflictException,
   Injectable,
   UnauthorizedException,
+  Inject,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../database/prisma.service';
 import { UserRole } from '../users/enums/user-role.enum';
+import { OTP_SERVICE } from '../otp/otp.module';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 
@@ -16,6 +18,10 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
+    @Inject(OTP_SERVICE) private readonly otpService: {
+      createAndSendUserVerification: (user: { id: string; email: string }) => Promise<any>;
+      verifyUserEmail: (email: string, code: string) => Promise<any>;
+    },
   ) {}
 
   private sanitizeUser(user: any) {
@@ -50,6 +56,7 @@ export class AuthService {
         passwordHash,
         role: UserRole.USER,
         isActive: true,
+        emailVerified: false,
       },
       select: {
         id: true,
@@ -62,9 +69,15 @@ export class AuthService {
       },
     });
 
+    const verificationOtp = await this.otpService.createAndSendUserVerification({
+      id: user.id,
+      email: user.email,
+    });
+
     return {
       message: 'User registered successfully',
       data: user,
+      verificationOtp,
     };
   }
 
@@ -92,6 +105,10 @@ export class AuthService {
         role: user.role,
       },
     };
+  }
+
+  async verifyEmail(email: string, code: string) {
+    return this.otpService.verifyUserEmail(email, code);
   }
 
   async validateUser(userId: string) {

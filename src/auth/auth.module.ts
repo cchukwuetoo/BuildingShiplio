@@ -7,10 +7,12 @@ import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { RolesGuard } from './guards/roles.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { OtpModule } from '../otp/otp.module';
 
 @Module({
   imports: [
     PassportModule,
+    OtpModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

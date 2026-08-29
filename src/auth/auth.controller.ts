@@ -27,6 +27,11 @@ export class AuthController {
     return this.authService.login(dto);
   }
 
+  @Post('verify-email')
+  async verifyEmail(@Body() body: { email: string; code: string }) {
+    return this.authService.verifyEmail(body.email, body.code);
+  }
+
   @Post('profile')
   @UseGuards(JwtAuthGuard)
   async profile(@Req() req: any) {

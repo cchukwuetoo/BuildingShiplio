@@ -8,8 +8,12 @@ import { UserRole } from '../users/enums/user-role.enum';
 
 describe('AuthService', () => {
   let service: AuthService;
-  let prisma: Partial<PrismaService>;
+  let prisma: any;
   let jwtService: Partial<JwtService>;
+  let otpService: {
+    createAndSendUserVerification: jest.Mock;
+    verifyUserEmail: jest.Mock;
+  };
 
   beforeEach(async () => {
     prisma = {
@@ -17,10 +21,25 @@ describe('AuthService', () => {
         findUnique: jest.fn(),
         create: jest.fn(),
       },
-    } as any;
+      otp: {
+        create: jest.fn(),
+      },
+    };
+
+    otpService = {
+      createAndSendUserVerification: jest.fn().mockResolvedValue({
+        code: '123456',
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+      }),
+      verifyUserEmail: jest.fn().mockResolvedValue({
+        message: 'Email verified successfully',
+        emailVerified: true,
+        userId: 'user-1',
+      }),
+    };
 
     jwtService = {
-      sign: jest.fn((payload) => `token.${payload.userId}`),
+      sign: jest.fn((payload: any) => `token.${payload.userId}`),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -28,13 +47,14 @@ describe('AuthService', () => {
         AuthService,
         { provide: PrismaService, useValue: prisma },
         { provide: JwtService, useValue: jwtService },
+        { provide: 'OTP_SERVICE', useValue: otpService },
       ],
     }).compile();
 
     service = module.get<AuthService>(AuthService);
   });
 
-  it('registers a user with USER role and strips passwordHash from response', async () => {
+  it('registers a user with USER role and sends a verification otp', async () => {
     prisma.user!.findUnique = jest.fn().mockResolvedValue(null);
     prisma.user!.create = jest.fn().mockResolvedValue({
       id: 'user-1',
@@ -57,6 +77,11 @@ describe('AuthService', () => {
     expect(result.message).toBe('User registered successfully');
     expect(result.data.role).toBe(UserRole.USER);
     expect(result.data.email).toBe('john@example.com');
+    expect(otpService.createAndSendUserVerification).toHaveBeenCalledWith({
+      id: 'user-1',
+      email: 'john@example.com',
+    });
+    expect(result.verificationOtp.code).toBe('123456');
   });
 
   it('rejects duplicate email during registration', async () => {
@@ -91,7 +116,7 @@ describe('AuthService', () => {
     expect(result.accessToken).toBeDefined();
     expect(result.user.email).toBe('john@example.com');
     expect(result.user.role).toBe(UserRole.USER);
-    expect(result.user.passwordHash).toBeUndefined();
+    expect((result.user as any).passwordHash).toBeUndefined();
   });
 
   it('rejects invalid login password', async () => {
@@ -110,5 +135,32 @@ describe('AuthService', () => {
     await expect(
       service.login({ email: 'john@example.com', password: 'wrong-password' }),
     ).rejects.toThrow(UnauthorizedException);
+  });
+
+  it('verifies a user email and sends a confirmation email', async () => {
+    const emailVerifiedOtp = {
+      id: 'otp-1',
+      userId: 'user-1',
+      code: '123456',
+      purpose: 'EMAIL_VERIFICATION',
+      status: 'ACTIVE',
+      expiresAt: new Date(Date.now() + 60000),
+    };
+
+    prisma.user!.findUnique = jest.fn().mockResolvedValue({
+      id: 'user-1',
+      email: 'john@example.com',
+      emailVerified: false,
+    });
+    prisma.user.update = jest.fn().mockResolvedValue({ id: 'user-1', emailVerified: true });
+    prisma.otp = {
+      findFirst: jest.fn().mockResolvedValue(emailVerifiedOtp),
+      update: jest.fn().mockResolvedValue({ ...emailVerifiedOtp, status: 'USED' }),
+    };
+
+    const result = await service.verifyEmail('john@example.com', '123456');
+
+    expect(result.emailVerified).toBe(true);
+    expect(result.message).toBe('Email verified successfully');
   });
 });

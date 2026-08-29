@@ -6,7 +6,11 @@ import { UserRole } from '../users/enums/user-role.enum';
 
 describe('ShipmentsService', () => {
   let service: ShipmentsService;
-  let prisma: Partial<PrismaService>;
+  let prisma: any;
+  let otpService: {
+    createAndSendShipmentOtp: jest.Mock;
+    verifyShipmentDriverOtp: jest.Mock;
+  };
 
   beforeEach(async () => {
     prisma = {
@@ -15,19 +19,38 @@ describe('ShipmentsService', () => {
         findMany: jest.fn(),
         findFirst: jest.fn(),
       },
-    } as any;
+      user: {
+        findUnique: jest.fn(),
+      },
+    };
+
+    otpService = {
+      createAndSendShipmentOtp: jest.fn().mockResolvedValue({
+        code: '654321',
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+      }),
+      verifyShipmentDriverOtp: jest.fn().mockResolvedValue({
+        message: 'Shipment OTP verified successfully',
+        verified: true,
+        shipmentId: 'shipment-1',
+      }),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ShipmentsService,
         { provide: PrismaService, useValue: prisma },
+        { provide: 'OTP_SERVICE', useValue: otpService },
       ],
     }).compile();
 
     service = module.get<ShipmentsService>(ShipmentsService);
   });
 
-  it('creates a shipment for a user and assigns PENDING status', async () => {
+  it('creates a shipment for a user and sends a driver otp', async () => {
+    prisma.user!.findUnique = jest.fn().mockResolvedValue({
+      email: 'john@example.com',
+    });
     prisma.shipment!.create = jest.fn().mockResolvedValue({
       id: 'shipment-1',
       userId: 'user-1',
@@ -59,6 +82,12 @@ describe('ShipmentsService', () => {
 
     expect(result.status).toBe('PENDING');
     expect(result.userId).toBe('user-1');
+    expect(otpService.createAndSendShipmentOtp).toHaveBeenCalledWith({
+      shipmentId: 'shipment-1',
+      userId: 'user-1',
+      email: 'john@example.com',
+    });
+    expect(result.driverOtp.code).toBe('654321');
   });
 
   it('returns only user-owned shipments', async () => {
@@ -78,5 +107,32 @@ describe('ShipmentsService', () => {
     });
 
     await expect(service.findOneForUser('user-1', 'shipment-2')).rejects.toThrow(ForbiddenException);
+  });
+
+  it('verifies a shipment driver otp and sends a confirmation mail', async () => {
+    prisma.shipment!.findUnique = jest.fn().mockResolvedValue({
+      id: 'shipment-1',
+      userId: 'user-1',
+    });
+    prisma.otp = {
+      findFirst: jest.fn().mockResolvedValue({
+        id: 'otp-2',
+        userId: 'user-1',
+        shipmentId: 'shipment-1',
+        code: '654321',
+        purpose: 'SHIPMENT_DRIVER',
+        status: 'ACTIVE',
+        expiresAt: new Date(Date.now() + 60000),
+      }),
+      update: jest.fn().mockResolvedValue({
+        id: 'otp-2',
+        status: 'USED',
+      }),
+    };
+
+    const result = await service.verifyDriverOtp('user-1', 'shipment-1', '654321');
+
+    expect(result.verified).toBe(true);
+    expect(result.message).toBe('Shipment OTP verified successfully');
   });
 });
