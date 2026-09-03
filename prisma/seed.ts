@@ -12,18 +12,13 @@ async function main() {
   // Hash password for test users
   const passwordHash = await bcrypt.hash('Test@123456', 10);
 
-  // Clear existing users for clean seeding (optional)
-  // await prisma.user.deleteMany({});
-
   // Create test SUPER_ADMIN
   const superAdmin = await prisma.user.upsert({
     where: { email: 'admin@shiplio.dev' },
     update: {},
     create: {
-      firstName: 'Admin',
-      lastName: 'User',
+      fullName: 'Admin User',
       email: 'admin@shiplio.dev',
-      phone: '+1234567890',
       passwordHash,
       role: UserRole.SUPER_ADMIN,
       emailVerified: true,
@@ -39,10 +34,8 @@ async function main() {
       where: { email: `driver${i}@shiplio.dev` },
       update: {},
       create: {
-        firstName: `Driver`,
-        lastName: `User${i}`,
+        fullName: `Driver User${i}`,
         email: `driver${i}@shiplio.dev`,
-        phone: `+123456789${i}`,
         passwordHash,
         role: UserRole.DRIVER,
         emailVerified: true,
@@ -60,10 +53,8 @@ async function main() {
       where: { email: `warehouse${i}@shiplio.dev` },
       update: {},
       create: {
-        firstName: `Warehouse`,
-        lastName: `Staff${i}`,
+        fullName: `Warehouse Staff${i}`,
         email: `warehouse${i}@shiplio.dev`,
-        phone: `+198765432${i}`,
         passwordHash,
         role: UserRole.WAREHOUSE,
         emailVerified: true,
@@ -79,10 +70,8 @@ async function main() {
     where: { email: 'customer@shiplio.dev' },
     update: {},
     create: {
-      firstName: 'John',
-      lastName: 'Doe',
+      fullName: 'John Doe',
       email: 'customer@shiplio.dev',
-      phone: '+1555000123',
       passwordHash,
       role: UserRole.USER,
       emailVerified: true,
@@ -90,6 +79,39 @@ async function main() {
     },
   });
   console.log('✅ Regular Customer created:', regularUser.email);
+
+  // Create test shipments owned by the customer so driver/warehouse endpoints have data
+  const shipmentCount = await prisma.shipment.count({
+    where: { userId: regularUser.id },
+  });
+
+  if (shipmentCount === 0) {
+    for (let i = 1; i <= 3; i++) {
+      await prisma.shipment.create({
+        data: {
+          userId: regularUser.id,
+          pickupAddress: `${i} Pickup Street`,
+          pickupCity: 'Lagos',
+          pickupState: 'Lagos',
+          pickupContactName: 'Sender',
+          pickupPhone: '+1555000113',
+          deliveryAddress: `${i} Delivery Avenue`,
+          deliveryCity: 'Abuja',
+          deliveryState: 'FCT',
+          recipientName: 'Recipient',
+          recipientPhone: '+1555000993',
+          packageType: 'Box',
+          description: `Test shipment ${i}`,
+          estimatedWeight: 5.5,
+          weightUnit: 'kg',
+          isFragile: false,
+        },
+      });
+    }
+    console.log('✅ Created 3 test shipments (PENDING) owned by customer');
+  } else {
+    console.log(`ℹ️ Skipped shipment creation: ${shipmentCount} already exist`);
+  }
 
   console.log('\n📋 Test User Credentials:');
   console.log('----------------------------');
