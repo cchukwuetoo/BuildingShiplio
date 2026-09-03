@@ -14,9 +14,20 @@ import { CreateShipmentDto } from './dto/create-shipment.dto';
 export class ShipmentsService {
   constructor(
     private readonly prisma: PrismaService,
-    @Inject(OTP_SERVICE) private readonly otpService: {
-      createAndSendShipmentOtp: (data: { shipmentId: string; userId: string; email: string }) => Promise<any>;
-      verifyShipmentDriverOtp: (userId: string, shipmentId: string, code: string) => Promise<any>;
+    @Inject(OTP_SERVICE)
+    private readonly otpService: {
+      createAndSendOtp: (
+        userId: string | null,
+        email: string,
+        purpose: string,
+        referenceId?: string,
+      ) => Promise<any>;
+      verifyOtp: (
+        email: string,
+        code: string,
+        purpose: string,
+        referenceId?: string,
+      ) => Promise<any>;
     },
   ) {}
 
@@ -53,11 +64,12 @@ export class ShipmentsService {
     });
 
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    const driverOtp = await this.otpService.createAndSendShipmentOtp({
-      shipmentId: shipment.id,
+    const driverOtp = await this.otpService.createAndSendOtp(
       userId,
-      email: user?.email ?? '',
-    });
+      user?.email ?? '',
+      'SHIPMENT_PICKUP',
+      shipment.id,
+    );
 
     return {
       ...shipment,
@@ -89,6 +101,25 @@ export class ShipmentsService {
   }
 
   async verifyDriverOtp(userId: string, shipmentId: string, code: string) {
-    return this.otpService.verifyShipmentDriverOtp(userId, shipmentId, code);
+    const shipment = await this.prisma.shipment.findUnique({
+      where: { id: shipmentId },
+    });
+
+    if (!shipment) {
+      throw new NotFoundException('Shipment not found');
+    }
+
+    if (shipment.userId !== userId) {
+      throw new ForbiddenException('Shipment does not belong to this user');
+    }
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    await this.otpService.verifyOtp(user?.email ?? '', code, 'SHIPMENT_PICKUP', shipmentId);
+
+    return {
+      message: 'Shipment OTP verified successfully',
+      verified: true,
+      shipmentId,
+    };
   }
 }

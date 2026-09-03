@@ -1,13 +1,16 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as nodemailer from 'nodemailer';
 import { PrismaService } from '../database/prisma.service';
+import { BrevoService } from '../email/brevo.service';
 
 @Injectable()
 export class OtpService {
+  private readonly logger = new Logger(OtpService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
+    private readonly brevoService: BrevoService,
   ) {}
 
   private generateCode(): string {
@@ -18,209 +21,104 @@ export class OtpService {
     return Number(this.configService.get<string>('OTP_EXPIRES_IN_MINUTES') ?? '10');
   }
 
-  private getTransporter() {
-    const host = this.configService.get<string>('SMTP_HOST');
-    const port = Number(this.configService.get<string>('SMTP_PORT') ?? '587');
-    const user = this.configService.get<string>('SMTP_USER');
-    const pass = this.configService.get<string>('SMTP_PASS');
-    const secure = this.configService.get<string>('SMTP_SECURE') === 'true';
-
-    if (!host || !user || !pass) {
-      return null;
-    }
-
-    return nodemailer.createTransport({
-      host,
-      port,
-      secure,
-      auth: {
-        user,
-        pass,
-      },
-    });
-  }
-
-  private async sendMail(to: string, subject: string, html: string) {
-    const transporter = this.getTransporter();
-    if (!transporter) {
-      console.log(`Email delivery skipped: SMTP config missing. To=${to} Subject=${subject}`);
-      return;
-    }
-
-    await transporter.sendMail({
-      from: this.configService.get<string>('SMTP_FROM') ?? 'no-reply@shiplio.local',
-      to,
-      subject,
-      html,
-    });
-  }
-
-  private async invalidateExistingOtps(
-    userId: string,
-    purpose: 'EMAIL_VERIFICATION' | 'SHIPMENT_DRIVER',
-  ) {
-    // Prisma exposes the model on the client at runtime; this keeps the service strongly typed.
+  private async invalidateExistingOtps(userId: string, purpose: string) {
     await (this.prisma as any).otp.updateMany({
       where: {
         userId,
-        purpose,
-        status: 'ACTIVE',
+        purpose: purpose.toUpperCase(),
+        isUsed: false,
       },
       data: {
-        status: 'EXPIRED',
+        isUsed: true,
       },
     });
   }
 
-  async createAndSendUserVerification(user: { id: string; email: string }) {
+  async createAndSendOtp(
+    userId: string | null,
+    email: string,
+    purpose: string,
+    referenceId?: string,
+  ) {
+    const normalizedPurpose = purpose.toUpperCase();
     const code = this.generateCode();
     const expiresAt = new Date(Date.now() + this.getExpiryMinutes() * 60 * 1000);
 
-    await this.invalidateExistingOtps(user.id, 'EMAIL_VERIFICATION');
+    if (userId) {
+      await this.invalidateExistingOtps(userId, normalizedPurpose);
+    }
 
     const otp = await (this.prisma as any).otp.create({
       data: {
-        userId: user.id,
+        userId,
         code,
-        purpose: 'EMAIL_VERIFICATION',
-        status: 'ACTIVE',
+        purpose: normalizedPurpose,
+        referenceId: referenceId ?? null,
+        isUsed: false,
         expiresAt,
       },
     });
 
-    await this.sendMail(
-      user.email,
-      'ShipLio Email Verification',
-      `<p>Your ShipLio email verification code is: <strong>${otp.code}</strong></p><p>It expires in ${this.getExpiryMinutes()} minutes.</p>`,
-    );
+    const fullName = userId
+      ? ((await this.prisma.user.findUnique({ where: { id: userId } }))?.fullName ?? email)
+      : email;
+
+    await this.brevoService.sendOtpEmail(email, fullName, code, normalizedPurpose);
 
     return {
       id: otp.id,
-      code: otp.code,
       expiresAt: otp.expiresAt,
       purpose: otp.purpose,
     };
   }
 
-  async createAndSendShipmentOtp(data: { shipmentId: string; userId: string; email: string }) {
-    const code = this.generateCode();
-    const expiresAt = new Date(Date.now() + this.getExpiryMinutes() * 60 * 1000);
+  async verifyOtp(
+    email: string,
+    code: string,
+    purpose: string,
+    referenceId?: string,
+  ) {
+    const normalizedPurpose = purpose.toUpperCase();
 
-    await this.invalidateExistingOtps(data.userId, 'SHIPMENT_DRIVER');
-
-    const otp = await (this.prisma as any).otp.create({
-      data: {
-        userId: data.userId,
-        shipmentId: data.shipmentId,
-        code,
-        purpose: 'SHIPMENT_DRIVER',
-        status: 'ACTIVE',
-        expiresAt,
-      },
-    });
-
-    await this.sendMail(
-      data.email,
-      'ShipLio Shipment Driver OTP',
-      `<p>Your shipment driver OTP is: <strong>${otp.code}</strong></p><p>Shipment ID: ${data.shipmentId}</p><p>It expires in ${this.getExpiryMinutes()} minutes.</p>`,
-    );
-
-    return {
-      id: otp.id,
-      code: otp.code,
-      expiresAt: otp.expiresAt,
-      purpose: otp.purpose,
-    };
-  }
-
-  async verifyUserEmail(email: string, code: string) {
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
+    const where: any = {
+      userId: user.id,
+      purpose: normalizedPurpose,
+      code,
+      isUsed: false,
+      expiresAt: { gt: new Date() },
+    };
+
+    if (referenceId) {
+      where.referenceId = referenceId;
+    }
+
     const otp = await (this.prisma as any).otp.findFirst({
-      where: {
-        userId: user.id,
-        purpose: 'EMAIL_VERIFICATION',
-        code,
-        status: 'ACTIVE',
-        expiresAt: { gt: new Date() },
-      },
+      where,
       orderBy: { createdAt: 'desc' },
     });
 
     if (!otp) {
-      throw new BadRequestException('Invalid or expired email verification code');
+      throw new BadRequestException('Invalid or expired OTP code');
     }
-
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: { emailVerified: true, emailVerifiedAt: new Date() },
-    });
 
     await (this.prisma as any).otp.update({
       where: { id: otp.id },
-      data: { status: 'USED' },
+      data: { isUsed: true },
     });
 
-    await this.sendMail(
-      user.email,
-      'ShipLio Email Verified',
-      `<p>Your email has been successfully verified.</p>`,
-    );
-
-    return {
-      message: 'Email verified successfully',
-      emailVerified: true,
-      userId: user.id,
-    };
+    return { user, otp };
   }
 
-  async verifyShipmentDriverOtp(userId: string, shipmentId: string, code: string) {
-    const shipment = await this.prisma.shipment.findUnique({ where: { id: shipmentId } });
-    if (!shipment) {
-      throw new NotFoundException('Shipment not found');
-    }
+  async sendVerificationSuccessEmail(email: string, fullName: string): Promise<void> {
+    await this.brevoService.sendVerificationSuccessEmail(email, fullName);
+  }
 
-    if (shipment.userId !== userId) {
-      throw new BadRequestException('Shipment does not belong to this user');
-    }
-
-    const otp = await (this.prisma as any).otp.findFirst({
-      where: {
-        userId,
-        shipmentId,
-        purpose: 'SHIPMENT_DRIVER',
-        code,
-        status: 'ACTIVE',
-        expiresAt: { gt: new Date() },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    if (!otp) {
-      throw new BadRequestException('Invalid or expired shipment OTP');
-    }
-
-    await (this.prisma as any).otp.update({
-      where: { id: otp.id },
-      data: { status: 'USED' },
-    });
-
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (user?.email) {
-      await this.sendMail(
-        user.email,
-        'ShipLio Shipment OTP Verified',
-        `<p>The shipment driver OTP has been verified successfully for shipment ${shipmentId}.</p>`,
-      );
-    }
-
-    return {
-      message: 'Shipment OTP verified successfully',
-      verified: true,
-      shipmentId,
-    };
+  async sendPasswordResetSuccessEmail(email: string, fullName: string): Promise<void> {
+    await this.brevoService.sendPasswordResetSuccessEmail(email, fullName);
   }
 }

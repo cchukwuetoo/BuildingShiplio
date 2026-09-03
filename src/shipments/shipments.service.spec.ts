@@ -8,8 +8,8 @@ describe('ShipmentsService', () => {
   let service: ShipmentsService;
   let prisma: any;
   let otpService: {
-    createAndSendShipmentOtp: jest.Mock;
-    verifyShipmentDriverOtp: jest.Mock;
+    createAndSendOtp: jest.Mock;
+    verifyOtp: jest.Mock;
   };
 
   beforeEach(async () => {
@@ -25,14 +25,14 @@ describe('ShipmentsService', () => {
     };
 
     otpService = {
-      createAndSendShipmentOtp: jest.fn().mockResolvedValue({
-        code: '654321',
+      createAndSendOtp: jest.fn().mockResolvedValue({
+        id: 'otp-1',
         expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+        purpose: 'SHIPMENT_PICKUP',
       }),
-      verifyShipmentDriverOtp: jest.fn().mockResolvedValue({
-        message: 'Shipment OTP verified successfully',
-        verified: true,
-        shipmentId: 'shipment-1',
+      verifyOtp: jest.fn().mockResolvedValue({
+        user: { id: 'user-1', email: 'john@example.com' },
+        otp: { id: 'otp-2', code: '654321', purpose: 'SHIPMENT_PICKUP' },
       }),
     };
 
@@ -82,12 +82,13 @@ describe('ShipmentsService', () => {
 
     expect(result.status).toBe('PENDING');
     expect(result.userId).toBe('user-1');
-    expect(otpService.createAndSendShipmentOtp).toHaveBeenCalledWith({
-      shipmentId: 'shipment-1',
-      userId: 'user-1',
-      email: 'john@example.com',
-    });
-    expect(result.driverOtp.code).toBe('654321');
+    expect(otpService.createAndSendOtp).toHaveBeenCalledWith(
+      'user-1',
+      'john@example.com',
+      'SHIPMENT_PICKUP',
+      'shipment-1',
+    );
+    expect(result.driverOtp.expiresAt).toBeDefined();
   });
 
   it('returns only user-owned shipments', async () => {
@@ -114,25 +115,20 @@ describe('ShipmentsService', () => {
       id: 'shipment-1',
       userId: 'user-1',
     });
-    prisma.otp = {
-      findFirst: jest.fn().mockResolvedValue({
-        id: 'otp-2',
-        userId: 'user-1',
-        shipmentId: 'shipment-1',
-        code: '654321',
-        purpose: 'SHIPMENT_DRIVER',
-        status: 'ACTIVE',
-        expiresAt: new Date(Date.now() + 60000),
-      }),
-      update: jest.fn().mockResolvedValue({
-        id: 'otp-2',
-        status: 'USED',
-      }),
-    };
+    prisma.user!.findUnique = jest.fn().mockResolvedValue({
+      id: 'user-1',
+      email: 'john@example.com',
+    });
 
     const result = await service.verifyDriverOtp('user-1', 'shipment-1', '654321');
 
     expect(result.verified).toBe(true);
     expect(result.message).toBe('Shipment OTP verified successfully');
+    expect(otpService.verifyOtp).toHaveBeenCalledWith(
+      'john@example.com',
+      '654321',
+      'SHIPMENT_PICKUP',
+      'shipment-1',
+    );
   });
 });

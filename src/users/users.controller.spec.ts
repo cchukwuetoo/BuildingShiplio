@@ -16,10 +16,8 @@ describe('UsersController', () => {
           useValue: {
             getProfile: jest.fn().mockResolvedValue({
               id: 'user-1',
-              firstName: 'John',
-              lastName: 'Doe',
+              fullName: 'John Doe',
               email: 'john@example.com',
-              phone: '08012345678',
               role: UserRole.USER,
               createdAt: new Date(),
             }),

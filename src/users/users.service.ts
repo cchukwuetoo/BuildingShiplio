@@ -10,15 +10,9 @@ export class UsersService {
     return this.prisma.user.findUnique({ where: { email } });
   }
 
-  async findByPhone(phone: string) {
-    return this.prisma.user.findUnique({ where: { phone } });
-  }
-
   async create(data: {
-    firstName: string;
-    lastName: string;
+    fullName: string;
     email: string;
-    phone: string;
     role?: UserRole;
     passwordHash: string;
   }) {
@@ -27,27 +21,18 @@ export class UsersService {
       throw new ConflictException('Email already exists');
     }
 
-    const existingPhone = await this.findByPhone(data.phone);
-    if (existingPhone) {
-      throw new ConflictException('Phone already exists');
-    }
-
     return this.prisma.user.create({
       data: {
-        firstName: data.firstName,
-        lastName: data.lastName,
+        fullName: data.fullName,
         email: data.email,
-        phone: data.phone,
         passwordHash: data.passwordHash,
         role: data.role ?? UserRole.USER,
         isActive: true,
       },
       select: {
         id: true,
-        firstName: true,
-        lastName: true,
+        fullName: true,
         email: true,
-        phone: true,
         role: true,
         isActive: true,
         createdAt: true,
@@ -61,10 +46,8 @@ export class UsersService {
       where: { id: userId },
       select: {
         id: true,
-        firstName: true,
-        lastName: true,
+        fullName: true,
         email: true,
-        phone: true,
         role: true,
         createdAt: true,
       },

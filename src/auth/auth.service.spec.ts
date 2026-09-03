@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { AuthService } from './auth.service';
@@ -11,8 +12,10 @@ describe('AuthService', () => {
   let prisma: any;
   let jwtService: Partial<JwtService>;
   let otpService: {
-    createAndSendUserVerification: jest.Mock;
-    verifyUserEmail: jest.Mock;
+    createAndSendOtp: jest.Mock;
+    verifyOtp: jest.Mock;
+    sendVerificationSuccessEmail: jest.Mock;
+    sendPasswordResetSuccessEmail: jest.Mock;
   };
 
   beforeEach(async () => {
@@ -20,26 +23,43 @@ describe('AuthService', () => {
       user: {
         findUnique: jest.fn(),
         create: jest.fn(),
+        update: jest.fn(),
       },
-      otp: {
-        create: jest.fn(),
+      refreshToken: {
+        create: jest.fn().mockResolvedValue({ id: 'rt-1' }),
+        findUnique: jest.fn(),
+        update: jest.fn(),
+        updateMany: jest.fn(),
       },
     };
 
     otpService = {
-      createAndSendUserVerification: jest.fn().mockResolvedValue({
-        code: '123456',
+      createAndSendOtp: jest.fn().mockResolvedValue({
+        id: 'otp-1',
         expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+        purpose: 'REGISTRATION',
       }),
-      verifyUserEmail: jest.fn().mockResolvedValue({
-        message: 'Email verified successfully',
-        emailVerified: true,
-        userId: 'user-1',
+      verifyOtp: jest.fn().mockResolvedValue({
+        user: {
+          id: 'user-1',
+          email: 'john@example.com',
+          fullName: 'John Doe',
+          isActive: false,
+        },
+        otp: {
+          id: 'otp-1',
+          code: '123456',
+          purpose: 'REGISTRATION',
+          isUsed: false,
+        },
       }),
+      sendVerificationSuccessEmail: jest.fn().mockResolvedValue(undefined),
+      sendPasswordResetSuccessEmail: jest.fn().mockResolvedValue(undefined),
     };
 
     jwtService = {
       sign: jest.fn((payload: any) => `token.${payload.userId}`),
+      verify: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -47,6 +67,7 @@ describe('AuthService', () => {
         AuthService,
         { provide: PrismaService, useValue: prisma },
         { provide: JwtService, useValue: jwtService },
+        { provide: ConfigService, useValue: { get: jest.fn() } },
         { provide: 'OTP_SERVICE', useValue: otpService },
       ],
     }).compile();
@@ -58,30 +79,23 @@ describe('AuthService', () => {
     prisma.user!.findUnique = jest.fn().mockResolvedValue(null);
     prisma.user!.create = jest.fn().mockResolvedValue({
       id: 'user-1',
-      firstName: 'John',
-      lastName: 'Doe',
-      email: 'john@example.com',
-      phone: '08012345678',
       role: UserRole.USER,
-      createdAt: new Date(),
     });
 
     const result = await service.register({
-      firstName: 'John',
-      lastName: 'Doe',
+      fullName: 'John Doe',
       email: 'john@example.com',
-      phone: '08012345678',
       password: 'securePassword',
+      confirmPassword: 'securePassword',
     });
 
-    expect(result.message).toBe('User registered successfully');
-    expect(result.data.role).toBe(UserRole.USER);
-    expect(result.data.email).toBe('john@example.com');
-    expect(otpService.createAndSendUserVerification).toHaveBeenCalledWith({
-      id: 'user-1',
-      email: 'john@example.com',
-    });
-    expect(result.verificationOtp.code).toBe('123456');
+    expect(result.id).toBe('user-1');
+    expect(result.role).toBe(UserRole.USER);
+    expect(otpService.createAndSendOtp).toHaveBeenCalledWith(
+      'user-1',
+      'john@example.com',
+      'REGISTRATION',
+    );
   });
 
   it('rejects duplicate email during registration', async () => {
@@ -89,11 +103,10 @@ describe('AuthService', () => {
 
     await expect(
       service.register({
-        firstName: 'John',
-        lastName: 'Doe',
+        fullName: 'John Doe',
         email: 'john@example.com',
-        phone: '08012345678',
         password: 'securePassword',
+        confirmPassword: 'securePassword',
       }),
     ).rejects.toThrow(ConflictException);
   });
@@ -102,10 +115,8 @@ describe('AuthService', () => {
     const hash = await bcrypt.hash('securePassword', 10);
     prisma.user!.findUnique = jest.fn().mockResolvedValue({
       id: 'user-1',
-      firstName: 'John',
-      lastName: 'Doe',
+      fullName: 'John Doe',
       email: 'john@example.com',
-      phone: '08012345678',
       passwordHash: hash,
       role: UserRole.USER,
       isActive: true,
@@ -123,10 +134,8 @@ describe('AuthService', () => {
     const hash = await bcrypt.hash('right-password', 10);
     prisma.user!.findUnique = jest.fn().mockResolvedValue({
       id: 'user-1',
-      firstName: 'John',
-      lastName: 'Doe',
+      fullName: 'John Doe',
       email: 'john@example.com',
-      phone: '08012345678',
       passwordHash: hash,
       role: UserRole.USER,
       isActive: true,
@@ -137,30 +146,20 @@ describe('AuthService', () => {
     ).rejects.toThrow(UnauthorizedException);
   });
 
-  it('verifies a user email and sends a confirmation email', async () => {
-    const emailVerifiedOtp = {
-      id: 'otp-1',
-      userId: 'user-1',
-      code: '123456',
-      purpose: 'EMAIL_VERIFICATION',
-      status: 'ACTIVE',
-      expiresAt: new Date(Date.now() + 60000),
-    };
-
-    prisma.user!.findUnique = jest.fn().mockResolvedValue({
+  it('verifies otp and activates user for REGISTRATION purpose', async () => {
+    prisma.user!.update = jest.fn().mockResolvedValue({
       id: 'user-1',
-      email: 'john@example.com',
-      emailVerified: false,
+      isActive: true,
+      emailVerified: true,
     });
-    prisma.user.update = jest.fn().mockResolvedValue({ id: 'user-1', emailVerified: true });
-    prisma.otp = {
-      findFirst: jest.fn().mockResolvedValue(emailVerifiedOtp),
-      update: jest.fn().mockResolvedValue({ ...emailVerifiedOtp, status: 'USED' }),
-    };
 
-    const result = await service.verifyEmail('john@example.com', '123456');
+    const result = await service.verifyOtp('john@example.com', '123456', 'REGISTRATION');
 
-    expect(result.emailVerified).toBe(true);
-    expect(result.message).toBe('Email verified successfully');
+    expect(result.id).toBe('user-1');
+    expect(result.is_active).toBe(true);
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: 'user-1' },
+      data: { isActive: true, emailVerified: true, emailVerifiedAt: expect.any(Date) },
+    });
   });
 });
