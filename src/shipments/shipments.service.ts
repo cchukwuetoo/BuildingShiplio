@@ -1,4 +1,5 @@
 import {
+  ConflictException,
   ForbiddenException,
   Injectable,
   Inject,
@@ -98,6 +99,39 @@ export class ShipmentsService {
     }
 
     return shipment;
+  }
+
+  async cancel(userId: string, shipmentId: string) {
+    const shipment = await this.prisma.shipment.findFirst({
+      where: { id: shipmentId },
+    });
+
+    if (!shipment) {
+      throw new NotFoundException('Shipment not found');
+    }
+
+    if (shipment.userId !== userId) {
+      throw new ForbiddenException('You do not have access to this shipment');
+    }
+
+    // A shipment can only be pulled back while it is still waiting for a driver.
+    const result = await this.prisma.shipment.updateMany({
+      where: { id: shipmentId, userId, status: ShipmentStatus.PENDING },
+      data: { status: ShipmentStatus.CANCELLED, cancelledAt: new Date() },
+    });
+
+    if (result.count === 0) {
+      throw new ConflictException(
+        'Only shipments awaiting pickup can be cancelled',
+      );
+    }
+
+    await (this.prisma as any).otp.updateMany({
+      where: { shipmentId, status: 'ACTIVE' },
+      data: { status: 'EXPIRED' },
+    });
+
+    return this.prisma.shipment.findUnique({ where: { id: shipmentId } });
   }
 
   async verifyDriverOtp(userId: string, shipmentId: string, code: string) {

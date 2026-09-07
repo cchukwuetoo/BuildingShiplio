@@ -22,6 +22,7 @@ enum ShipmentStatus {
   RECEIVED_AT_WAREHOUSE
   PROCESSING
   READY_FOR_DISPATCH
+  CANCELLED
 }
 
 enum OtpPurpose {
@@ -96,6 +97,7 @@ model Shipment {
   receivedAt         DateTime?
   processingStartedAt DateTime?
   readyForDispatchAt DateTime?
+  cancelledAt        DateTime?
   assignedDriver     User?          @relation("DriverShipments", fields: [assignedDriverId], references: [id])
   warehouse          User?          @relation("WarehouseShipments", fields: [warehouseId], references: [id])
 
