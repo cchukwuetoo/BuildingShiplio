@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Param,
+  Patch,
   Post,
   Req,
   UseGuards,
@@ -23,6 +24,12 @@ export class ShipmentsController {
   @Roles(UserRole.USER)
   async create(@Req() req: any, @Body() dto: CreateShipmentDto) {
     return this.shipmentsService.create(req.user.userId, dto, req.user.role);
+  }
+
+  @Patch(':id/cancel')
+  @Roles(UserRole.USER)
+  async cancel(@Req() req: any, @Param('id') id: string) {
+    return this.shipmentsService.cancel(req.user.userId, id);
   }
 
   @Post('verify-driver-otp')

@@ -1,0 +1,46 @@
+.tab-buttons {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 1.1rem;
+  flex-wrap: wrap;
+  background: white;
+  border: 1px solid var(--line);
+  padding: 0.3rem;
+  border-radius: 12px;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.tab-btn {
+  padding: 0.55rem 0.95rem;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  border-radius: 9px;
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+
+.tab-btn:hover {
+  color: var(--ink);
+  background: #f8fafc;
+}
+
+.tab-btn.active {
+  background: var(--navy);
+  color: white;
+}
+
+.loading-text {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--muted);
+  padding: 1rem 0.2rem;
+}
+
+.toolbar {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
