@@ -16,6 +16,7 @@ export default function DriverDashboard() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [busyId, setBusyId] = useState<string | null>(null)
+  const [notice, setNotice] = useState('')
   const [activeTab, setActiveTab] = useState<'available' | 'assigned'>('available')
 
   useEffect(() => {
@@ -35,11 +36,13 @@ export default function DriverDashboard() {
     }
   }
 
-  const runAction = async (id: string, action: () => Promise<unknown>, fallback: string) => {
+  const runAction = async (id: string, action: () => Promise<unknown>, fallback: string, ok: string) => {
     try {
       setBusyId(id)
       setError('')
       await action()
+      setNotice(ok)
+      setTimeout(() => setNotice(''), 3500)
       await loadShipments()
     } catch (err: unknown) {
       setError(getErrorMessage(err) || fallback)
@@ -48,10 +51,13 @@ export default function DriverDashboard() {
     }
   }
 
-  const availableShipments = shipments.filter((s) => s.status === 'PENDING')
-  const assignedShipments = shipments.filter(
-    (s) => s.status === 'PICKUP_ASSIGNED' || s.status === 'PICKED_UP',
-  )
+  const byNewest = (a: Shipment, b: Shipment) =>
+    (b.createdAt || '').localeCompare(a.createdAt || '')
+
+  const availableShipments = shipments.filter((s) => s.status === 'PENDING').sort(byNewest)
+  const assignedShipments = shipments
+    .filter((s) => s.status === 'PICKUP_ASSIGNED' || s.status === 'PICKED_UP')
+    .sort(byNewest)
   const visible = activeTab === 'available' ? availableShipments : assignedShipments
 
   return (
@@ -80,6 +86,7 @@ export default function DriverDashboard() {
       </div>
 
       {error && <div className="message error">{error}</div>}
+      {notice && <div className="message success">{notice}</div>}
 
       <div className="tab-buttons">
         <button
@@ -127,6 +134,7 @@ export default function DriverDashboard() {
                     shipment.id,
                     () => driversAPI.accept(shipment.id),
                     'Failed to accept shipment',
+                    'Shipment accepted — head to the pickup.',
                   )
                 }
               >
@@ -141,6 +149,7 @@ export default function DriverDashboard() {
                     shipment.id,
                     () => driversAPI.markPickedUp(shipment.id),
                     'Failed to mark as picked up',
+                    'Picked up — on its way to the warehouse.',
                   )
                 }
               >

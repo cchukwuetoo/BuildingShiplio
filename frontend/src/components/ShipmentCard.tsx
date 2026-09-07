@@ -10,7 +10,17 @@ interface ShipmentCardProps {
   actions?: ReactNode
 }
 
+const STATUS_STEPS = ['PENDING', 'PICKUP_ASSIGNED', 'PICKED_UP', 'RECEIVED_AT_WAREHOUSE', 'PROCESSING', 'READY_FOR_DISPATCH']
+
+function stepIndex(status: string): number {
+  const idx = STATUS_STEPS.indexOf(status)
+  return idx === -1 ? -1 : idx
+}
+
 export default function ShipmentCard({ shipment, extra, actions }: ShipmentCardProps) {
+  const currentStep = stepIndex(shipment.status)
+  const hasTracker = currentStep >= 0 && shipment.status !== 'CANCELLED'
+
   return (
     <article className="shipment-card">
       <header className="shipment-card-head">
@@ -48,6 +58,20 @@ export default function ShipmentCard({ shipment, extra, actions }: ShipmentCardP
           </p>
         </div>
       </div>
+
+      {hasTracker && (
+        <ol className="progress-tracker" aria-label="Shipment progress">
+          {STATUS_STEPS.map((step, i) => (
+            <li
+              key={step}
+              className={`${i <= currentStep ? 'done' : ''} ${i === currentStep ? 'current' : ''}`}
+            >
+              <span className="tracker-dot" />
+              <span className="tracker-label">{formatStatus(step)}</span>
+            </li>
+          ))}
+        </ol>
+      )}
 
       <div className="package-details">
         <div>

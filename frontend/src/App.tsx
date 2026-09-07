@@ -5,14 +5,15 @@ import DriverDashboard from './pages/DriverDashboard.js'
 import WarehouseDashboard from './pages/WarehouseDashboard.js'
 import CustomerDashboard from './pages/CustomerDashboard.js'
 import { formatRole } from './lib/format.js'
-import { User } from './types.js'
+import { AuthUser } from './types.js'
 import './App.css'
 import './styles/dashboard.css'
+import './styles/customer.css'
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [userRole, setUserRole] = useState<string | null>(null)
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<AuthUser | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -21,18 +22,23 @@ function App() {
     const storedUser = localStorage.getItem('user')
 
     if (token && storedRole && storedUser) {
-      setIsLoggedIn(true)
-      setUserRole(storedRole)
-      setUser(JSON.parse(storedUser))
+      try {
+        setUser(JSON.parse(storedUser))
+        setUserRole(storedRole)
+        setIsLoggedIn(true)
+      } catch {
+        // corrupted session, treat as logged out
+      }
     }
     setLoading(false)
   }, [])
 
   const handleLogin = async (email: string, password: string) => {
     const response = await authAPI.login(email, password)
-    const { accessToken, user: userData } = response.data
+    const { accessToken, refreshToken, user: userData } = response.data
 
     localStorage.setItem('token', accessToken)
+    if (refreshToken) localStorage.setItem('refreshToken', refreshToken)
     localStorage.setItem('userRole', userData.role)
     localStorage.setItem('user', JSON.stringify(userData))
 
@@ -41,13 +47,28 @@ function App() {
     setUser(userData)
   }
 
-  const handleLogout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('userRole')
-    localStorage.removeItem('user')
-    setIsLoggedIn(false)
-    setUserRole(null)
-    setUser(null)
+  const handleLogout = async () => {
+    const refreshToken = localStorage.getItem('refreshToken')
+    try {
+      if (refreshToken) {
+        await authAPI.logout(refreshToken)
+      }
+    } catch {
+      // best effort — clear local session regardless
+    } finally {
+      localStorage.removeItem('token')
+      localStorage.removeItem('refreshToken')
+      localStorage.removeItem('userRole')
+      localStorage.removeItem('user')
+      setIsLoggedIn(false)
+      setUserRole(null)
+      setUser(null)
+    }
+  }
+
+  const switchRole = (role: string) => {
+    localStorage.setItem('userRole', role)
+    setUserRole(role)
   }
 
   if (loading) {
@@ -63,6 +84,10 @@ function App() {
     return <LoginPage onLogin={handleLogin} />
   }
 
+  if (userRole === 'USER') {
+    return <CustomerDashboard user={user} onLogout={() => void handleLogout()} />
+  }
+
   return (
     <div className="app-container">
       <header className="app-header">
@@ -75,12 +100,11 @@ function App() {
         </div>
         <div className="header-info">
           <div className="user-chip">
-            <span className="name">
-              {user?.firstName} {user?.lastName}
-            </span>
+            <span className="avatar">{user?.fullName?.[0]?.toUpperCase() || 'S'}</span>
+            <span className="name">{user?.fullName || 'User'}</span>
             <span className="role-pill">{formatRole(userRole)}</span>
           </div>
-          <button onClick={handleLogout} className="logout-btn">
+          <button onClick={() => void handleLogout()} className="logout-btn">
             Sign out
           </button>
         </div>
@@ -89,36 +113,14 @@ function App() {
       <main className="app-main">
         {userRole === 'DRIVER' && <DriverDashboard />}
         {userRole === 'WAREHOUSE' && <WarehouseDashboard />}
-        {userRole === 'USER' && <CustomerDashboard />}
         {userRole === 'SUPER_ADMIN' && (
           <div className="admin-view">
             <h2>Admin preview</h2>
             <p>Switch into a workspace to inspect the operator experience.</p>
             <div className="test-links">
-              <button
-                onClick={() => {
-                  localStorage.setItem('userRole', 'DRIVER')
-                  setUserRole('DRIVER')
-                }}
-              >
-                Driver workspace
-              </button>
-              <button
-                onClick={() => {
-                  localStorage.setItem('userRole', 'WAREHOUSE')
-                  setUserRole('WAREHOUSE')
-                }}
-              >
-                Warehouse workspace
-              </button>
-              <button
-                onClick={() => {
-                  localStorage.setItem('userRole', 'USER')
-                  setUserRole('USER')
-                }}
-              >
-                Customer workspace
-              </button>
+              <button onClick={() => switchRole('DRIVER')}>Driver workspace</button>
+              <button onClick={() => switchRole('WAREHOUSE')}>Warehouse workspace</button>
+              <button onClick={() => switchRole('USER')}>Customer workspace</button>
             </div>
           </div>
         )}

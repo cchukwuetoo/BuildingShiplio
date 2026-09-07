@@ -70,6 +70,19 @@
   border-radius: 999px;
 }
 
+.user-chip .avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #14b8a6, #0f766e);
+  color: white;
+  display: grid;
+  place-items: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
 .user-chip .name {
   font-size: 0.85rem;
   white-space: nowrap;
@@ -348,6 +361,72 @@
 .status-ready-for-dispatch { background: #f0fdfa; color: #0f766e; }
 .status-cancelled { background: #fef2f2; color: #b91c1c; }
 
+.progress-tracker {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  list-style: none;
+  margin: 0.9rem 0 0;
+  padding: 0.9rem 1rem;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow-x: auto;
+}
+
+.progress-tracker li {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+  position: relative;
+}
+
+.progress-tracker li::after {
+  content: '';
+  display: block;
+  width: 16px;
+  height: 1px;
+  background: #cbd5e1;
+  margin: 0 0.35rem;
+  flex-shrink: 0;
+}
+
+.progress-tracker li:last-child::after {
+  display: none;
+}
+
+.tracker-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #cbd5e1;
+  flex-shrink: 0;
+}
+
+.progress-tracker li.done .tracker-dot {
+  background: var(--teal);
+}
+
+.progress-tracker li.current .tracker-dot {
+  background: var(--teal-dark);
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.18);
+}
+
+.tracker-label {
+  font-size: 0.68rem;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.progress-tracker li.done .tracker-label {
+  color: var(--teal-dark);
+}
+
+.progress-tracker li.current .tracker-label {
+  color: var(--ink);
+}
+
 .action-buttons {
   display: flex;
   gap: 0.5rem;
@@ -584,5 +663,48 @@
 
   .app-main {
     padding: 1.15rem 1rem 2.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-header {
+    padding: 0.7rem 1rem;
+    gap: 0.5rem;
+  }
+
+  .brand-text span {
+    display: none;
+  }
+
+  .page-header h2 {
+    font-size: 1.3rem;
+  }
+
+  .toolbar,
+  .header-info {
+    gap: 0.35rem;
+  }
+
+  .tab-buttons {
+    width: 100%;
+  }
+
+  .tab-btn {
+    flex: 1;
+    text-align: center;
+    padding: 0.5rem 0.5rem;
+    font-size: 0.8rem;
+  }
+
+  .shipment-card {
+    padding: 1rem;
+  }
+
+  .admin-view {
+    padding: 1.25rem;
+  }
+
+  .test-links button {
+    flex: 1 1 100%;
   }
 }

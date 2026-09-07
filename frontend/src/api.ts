@@ -1,4 +1,5 @@
 import axios from 'axios'
+import type { LoginResponse } from './types.js'
 
 const API_URL = 'http://localhost:3000'
 
@@ -16,9 +17,18 @@ api.interceptors.request.use((config) => {
 
 export const authAPI = {
   login: (email: string, password: string) =>
-    api.post('/auth/login', { email, password }),
-  register: (data: any) =>
-    api.post('/auth/register', data),
+    api.post<LoginResponse>('/auth/login', { email, password }),
+  register: (data: {
+    fullName: string
+    email: string
+    password: string
+    confirmPassword: string
+  }) => api.post('/auth/register', data),
+  verifyOtp: (email: string, otpCode: string, purpose: string) =>
+    api.post('/auth/verify-otp', { email, otpCode, purpose }),
+  resendOtp: (email: string, purpose: string) =>
+    api.post('/auth/resend-otp', { email, purpose }),
+  logout: (refreshToken: string) => api.post('/auth/logout', { refreshToken }),
 }
 
 export const driversAPI = {

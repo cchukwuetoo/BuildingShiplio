@@ -16,6 +16,7 @@ export default function WarehouseDashboard() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [busyId, setBusyId] = useState<string | null>(null)
+  const [notice, setNotice] = useState('')
   const [activeTab, setActiveTab] = useState<'inbox' | 'processing' | 'ready'>('inbox')
 
   useEffect(() => {
@@ -35,11 +36,13 @@ export default function WarehouseDashboard() {
     }
   }
 
-  const runAction = async (id: string, action: () => Promise<unknown>, fallback: string) => {
+  const runAction = async (id: string, action: () => Promise<unknown>, fallback: string, ok: string) => {
     try {
       setBusyId(id)
       setError('')
       await action()
+      setNotice(ok)
+      setTimeout(() => setNotice(''), 3500)
       await loadShipments()
     } catch (err: unknown) {
       setError(getErrorMessage(err) || fallback)
@@ -48,11 +51,14 @@ export default function WarehouseDashboard() {
     }
   }
 
-  const inboxShipments = shipments.filter((s) => s.status === 'PICKED_UP')
-  const processingShipments = shipments.filter(
-    (s) => s.status === 'RECEIVED_AT_WAREHOUSE' || s.status === 'PROCESSING',
-  )
-  const readyShipments = shipments.filter((s) => s.status === 'READY_FOR_DISPATCH')
+  const byNewest = (a: Shipment, b: Shipment) =>
+    (b.createdAt || '').localeCompare(a.createdAt || '')
+
+  const inboxShipments = shipments.filter((s) => s.status === 'PICKED_UP').sort(byNewest)
+  const processingShipments = shipments
+    .filter((s) => s.status === 'RECEIVED_AT_WAREHOUSE' || s.status === 'PROCESSING')
+    .sort(byNewest)
+  const readyShipments = shipments.filter((s) => s.status === 'READY_FOR_DISPATCH').sort(byNewest)
 
   const visible =
     activeTab === 'inbox'
@@ -95,6 +101,7 @@ export default function WarehouseDashboard() {
       </div>
 
       {error && <div className="message error">{error}</div>}
+      {notice && <div className="message success">{notice}</div>}
 
       <div className="tab-buttons">
         <button
@@ -146,6 +153,7 @@ export default function WarehouseDashboard() {
                     shipment.id,
                     () => warehouseAPI.receive(shipment.id),
                     'Failed to receive shipment',
+                    'Shipment received at warehouse.',
                   )
                 }
               >
@@ -160,6 +168,7 @@ export default function WarehouseDashboard() {
                     shipment.id,
                     () => warehouseAPI.startProcessing(shipment.id),
                     'Failed to start processing',
+                    'Processing started.',
                   )
                 }
               >
@@ -174,6 +183,7 @@ export default function WarehouseDashboard() {
                     shipment.id,
                     () => warehouseAPI.markReady(shipment.id),
                     'Failed to mark as ready',
+                    'Ready for dispatch.',
                   )
                 }
               >

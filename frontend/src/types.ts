@@ -15,15 +15,38 @@ export type Shipment = {
   description: string
   estimatedWeight: number
   weightUnit: string
+  length?: number
+  width?: number
+  height?: number
+  dimensionUnit?: string
   isFragile?: boolean
+  declaredValue?: number
+  createdAt?: string
+  assignedAt?: string
   pickedUpAt?: string
   receivedAt?: string
+  processingStartedAt?: string
   readyForDispatchAt?: string
 }
 
 export type User = {
-  firstName?: string
-  lastName?: string
+  id?: string
+  fullName?: string
   email?: string
   role?: string
+}
+
+export type AuthUser = {
+  id: string
+  fullName: string
+  email: string
+  role: string
+}
+
+export type LoginResponse = {
+  accessToken: string
+  refreshToken: string
+  tokenType: string
+  expiresIn: string | number
+  user: AuthUser
 }

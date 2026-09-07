@@ -15,16 +15,18 @@ interface LoginPageProps {
   onLogin: (email: string, password: string) => Promise<void>
 }
 
-type Mode = 'signin' | 'register'
+type Mode = 'signin' | 'register' | 'verify'
 
 export default function LoginPage({ onLogin }: LoginPageProps) {
   const [mode, setMode] = useState<Mode>('signin')
-  const [firstName, setFirstName] = useState('')
-  const [lastName, setLastName] = useState('')
-  const [phone, setPhone] = useState('')
+  const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [otpCode, setOtpCode] = useState('')
+  const [pendingEmail, setPendingEmail] = useState('')
   const [error, setError] = useState('')
+  const [info, setInfo] = useState('')
   const [loading, setLoading] = useState(false)
 
   const runLogin = async (nextEmail: string, nextPassword: string) => {
@@ -42,13 +44,43 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
   const switchMode = (next: Mode) => {
     setMode(next)
     setError('')
+    setInfo('')
+  }
+
+  const handleVerifyOtp = async (purpose = 'REGISTRATION') => {
+    setLoading(true)
+    setError('')
+    setInfo('')
+    try {
+      await authAPI.verifyOtp(pendingEmail, otpCode, purpose)
+      setInfo('Email verified! You can now sign in.')
+      setMode('signin')
+      setOtpCode('')
+    } catch (err: unknown) {
+      setError(getErrorMessage(err) || 'That code did not work. Try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleResend = async (purpose = 'REGISTRATION') => {
+    setLoading(true)
+    setError('')
+    try {
+      await authAPI.resendOtp(pendingEmail, purpose)
+      setInfo('A new code has been sent to your email.')
+    } catch (err: unknown) {
+      setError(getErrorMessage(err) || 'Could not resend the code.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (mode === 'register') {
-      if (!firstName || !lastName || !phone || !email || !password) {
+      if (!fullName || !email || !password || !confirmPassword) {
         setError('Fill in every field to create an account.')
         return
       }
@@ -56,15 +88,31 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
         setError('Password must be at least 8 characters.')
         return
       }
+      if (password !== confirmPassword) {
+        setError('Passwords do not match.')
+        return
+      }
       setLoading(true)
       setError('')
       try {
-        await authAPI.register({ firstName, lastName, phone, email, password })
-        await runLogin(email, password)
+        await authAPI.register({ fullName, email, password, confirmPassword })
+        setPendingEmail(email)
+        setMode('verify')
+        setInfo('Account created! Enter the 6-digit code we emailed you to activate it.')
       } catch (err: unknown) {
         setError(getErrorMessage(err) || 'Could not create account.')
+      } finally {
         setLoading(false)
       }
+      return
+    }
+
+    if (mode === 'verify') {
+      if (!otpCode || otpCode.length !== 6) {
+        setError('Enter the 6-digit code from your email.')
+        return
+      }
+      await handleVerifyOtp()
       return
     }
 
@@ -78,129 +126,238 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
   return (
     <div className="login-shell">
       <section className="login-hero">
-        <div>
-          <div className="brand">
-            <div className="brand-mark">S</div>
-            <div className="brand-text">
-              <strong>Shiplio</strong>
-              <span>Logistics operations</span>
-            </div>
+        <div className="hero-inner">
+          <div className="hero-copy">
+            <h1>Logistics, made visible.</h1>
+            <p>Every parcel, one clear line from pickup to doorstep.</p>
           </div>
-          <h1>Move packages from pickup to dispatch without the clutter.</h1>
-          <p>
-            One console for customers, drivers, and warehouse teams — with a clear path for every shipment.
-          </p>
-          <div className="hero-points">
-            <div>
-              <span className="dot" />
-              Customers book pickups in minutes
-            </div>
-            <div>
-              <span className="dot" />
-              Drivers accept and confirm collections
-            </div>
-            <div>
-              <span className="dot" />
-              Warehouse staff receive, process, and release
+
+          <div className="hero-scene" aria-hidden>
+            <span className="orb orb-a" />
+            <span className="orb orb-b" />
+            <span className="float-badge badge-1">✓</span>
+            <span className="float-badge badge-2">▣</span>
+
+            <div className="tracking-card">
+              <div className="tracking-head">
+                <div className="tracking-live">
+                  <span className="pulse-dot" />
+                  Live shipment
+                </div>
+                <span className="tracking-id">#SHPL-4F2A</span>
+              </div>
+
+              <div className="tracking-route">
+                <div className="tracking-node">
+                  <span className="node-dot done" />
+                  <div>
+                    <span>Pickup</span>
+                    <strong>Lagos</strong>
+                  </div>
+                </div>
+                <div className="tracking-line">
+                  <span className="line-track half">
+                    <span className="line-vehicle" />
+                  </span>
+                </div>
+                <div className="tracking-node">
+                  <span className="node-dot" />
+                  <div>
+                    <span>Warehouse</span>
+                    <strong>Ikeja</strong>
+                  </div>
+                </div>
+                <div className="tracking-line">
+                  <span className="line-track" />
+                </div>
+                <div className="tracking-node">
+                  <span className="node-dot" />
+                  <div>
+                    <span>Delivery</span>
+                    <strong>Abuja</strong>
+                  </div>
+                </div>
+              </div>
+
+              <div className="tracking-meta">
+                <div className="pkg">
+                  <span className="pkg-icon">▣</span>
+                  <div>
+                    <span>Package</span>
+                    <strong>Box · 5.4 kg</strong>
+                  </div>
+                </div>
+                <div className="eta">
+                  <span>ETA</span>
+                  <strong>Tue 12:40</strong>
+                </div>
+              </div>
+
+              <div className="tracking-progress">
+                <div className="progress-track">
+                  <span className="progress-fill" />
+                </div>
+                <span>3 of 4 stops</span>
+              </div>
             </div>
           </div>
         </div>
-        <p className="hero-foot">Pickup · warehouse · dispatch</p>
       </section>
 
       <section className="login-panel">
         <div className="login-card">
-          <h2>{mode === 'register' ? 'Create account' : 'Sign in'}</h2>
+          <h2>
+            {mode === 'register' && 'Create account'}
+            {mode === 'signin' && 'Sign in'}
+            {mode === 'verify' && 'Verify your email'}
+          </h2>
           <p>
-            {mode === 'register'
-              ? 'Register as a customer to book pickups.'
-              : 'Enter your credentials to continue.'}
+            {mode === 'register' && 'Register as a customer to book pickups.'}
+            {mode === 'signin' && 'Enter your credentials to continue.'}
+            {mode === 'verify' && 'A 6-digit code was sent to your inbox.'}
           </p>
 
           <form onSubmit={handleSubmit}>
             {error && <div className="error-message">{error}</div>}
+            {info && <div className="info-message">{info}</div>}
 
             {mode === 'register' && (
               <>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label htmlFor="firstName">First name</label>
-                    <input
-                      id="firstName"
-                      type="text"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      disabled={loading}
-                      autoComplete="given-name"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label htmlFor="lastName">Last name</label>
-                    <input
-                      id="lastName"
-                      type="text"
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                      disabled={loading}
-                      autoComplete="family-name"
-                    />
-                  </div>
+                <div className="form-group">
+                  <label htmlFor="fullName">Full name</label>
+                  <input
+                    id="fullName"
+                    type="text"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    disabled={loading}
+                    autoComplete="name"
+                    placeholder="Jane Doe"
+                  />
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="phone">Phone</label>
+                  <label htmlFor="email">Email</label>
                   <input
-                    id="phone"
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+2348012345678"
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@shiplio.dev"
                     disabled={loading}
-                    autoComplete="tel"
+                    autoComplete="username"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="password">Password</label>
+                  <input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="At least 8 characters"
+                    disabled={loading}
+                    autoComplete="new-password"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="confirmPassword">Confirm password</label>
+                  <input
+                    id="confirmPassword"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Repeat your password"
+                    disabled={loading}
+                    autoComplete="new-password"
                   />
                 </div>
               </>
             )}
 
-            <div className="form-group">
-              <label htmlFor="email">Email</label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@shiplio.dev"
-                disabled={loading}
-                autoComplete="username"
-              />
-            </div>
+            {mode === 'signin' && (
+              <>
+                <div className="form-group">
+                  <label htmlFor="email">Email</label>
+                  <input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@shiplio.dev"
+                    disabled={loading}
+                    autoComplete="username"
+                  />
+                </div>
 
-            <div className="form-group">
-              <label htmlFor="password">Password</label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder={mode === 'register' ? 'At least 8 characters' : 'Enter your password'}
-                disabled={loading}
-                autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
-              />
-            </div>
+                <div className="form-group">
+                  <label htmlFor="password">Password</label>
+                  <input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter your password"
+                    disabled={loading}
+                    autoComplete="current-password"
+                  />
+                </div>
+              </>
+            )}
+
+            {mode === 'verify' && (
+              <>
+                <div className="form-group">
+                  <label htmlFor="otpCode">6-digit code</label>
+                  <input
+                    id="otpCode"
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                    placeholder="000000"
+                    disabled={loading}
+                    autoComplete="one-time-code"
+                  />
+                </div>
+                <button
+                  type="button"
+                  className="resend-btn"
+                  onClick={() => void handleResend()}
+                  disabled={loading}
+                >
+                  Resend code
+                </button>
+              </>
+            )}
 
             <button type="submit" className="login-btn" disabled={loading}>
-              {loading
-                ? mode === 'register'
-                  ? 'Creating account…'
-                  : 'Signing in…'
+              {mode === 'verify'
+                ? loading
+                  ? 'Verifying…'
+                  : 'Verify & continue'
                 : mode === 'register'
-                  ? 'Create account'
-                  : 'Continue'}
+                  ? loading
+                    ? 'Creating account…'
+                    : 'Create account'
+                  : loading
+                    ? 'Signing in…'
+                    : 'Continue'}
             </button>
           </form>
 
           <p className="auth-switch">
-            {mode === 'register' ? (
+            {mode === 'verify' ? (
+              <>
+                Wrong email?{' '}
+                <button type="button" onClick={() => { setPendingEmail(''); switchMode('register') }}>
+                  Start over
+                </button>
+              </>
+            ) : mode === 'register' ? (
               <>
                 Already have an account?{' '}
                 <button type="button" onClick={() => switchMode('signin')}>
