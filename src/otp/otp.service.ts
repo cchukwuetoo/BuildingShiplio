@@ -21,58 +21,7 @@ export class OtpService {
     return Number(this.configService.get<string>('OTP_EXPIRES_IN_MINUTES') ?? '10');
   }
 
-<<<<<<< HEAD
   private async invalidateExistingOtps(userId: string, purpose: string) {
-=======
-  private getTransporter() {
-    const host = this.configService.get<string>('SMTP_HOST');
-    const port = Number(this.configService.get<string>('SMTP_PORT') ?? '587');
-    const user = this.configService.get<string>('SMTP_USER');
-    const pass = this.configService.get<string>('SMTP_PASS');
-    const secure = this.configService.get<string>('SMTP_SECURE') === 'true';
-
-    if (!host || !user || !pass) {
-      return null;
-    }
-
-    return nodemailer.createTransport({
-      host,
-      port,
-      secure,
-      auth: {
-        user,
-        pass,
-      },
-    });
-  }
-
-  private async sendMail(to: string, subject: string, html: string) {
-    const transporter = this.getTransporter();
-    if (!transporter) {
-      console.log(`Email delivery skipped: SMTP config missing. To=${to} Subject=${subject}`);
-      return;
-    }
-
-    try {
-      await transporter.sendMail({
-        from: this.configService.get<string>('SMTP_FROM') ?? 'no-reply@shiplio.local',
-        to,
-        subject,
-        html,
-      });
-    } catch (err) {
-      // Email delivery is best-effort — a transport failure must not break OTP
-      // creation or the flow that triggered it (shipment booking, registration…).
-      console.error(`Email delivery failed. To=${to} Subject=${subject}`, err);
-    }
-  }
-
-  private async invalidateExistingOtps(
-    userId: string,
-    purpose: 'EMAIL_VERIFICATION' | 'SHIPMENT_DRIVER',
-  ) {
-    // Prisma exposes the model on the client at runtime; this keeps the service strongly typed.
->>>>>>> 06ece42a65c559312844a17abb9d939ff008b111
     await (this.prisma as any).otp.updateMany({
       where: {
         userId,
