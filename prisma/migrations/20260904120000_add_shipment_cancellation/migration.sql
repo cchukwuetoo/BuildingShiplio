@@ -1,0 +1,3 @@
+ALTER TYPE "ShipmentStatus" ADD VALUE 'CANCELLED';
+
+ALTER TABLE "Shipment" ADD COLUMN "cancelledAt" TIMESTAMP(3);

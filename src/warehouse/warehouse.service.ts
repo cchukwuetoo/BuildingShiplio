@@ -11,7 +11,16 @@ export class WarehouseService {
       where: {
         OR: [
           { status: ShipmentStatus.PICKED_UP, warehouseId: null },
-          { warehouseId, status: { in: [ShipmentStatus.RECEIVED_AT_WAREHOUSE, ShipmentStatus.PROCESSING] } },
+          {
+            warehouseId,
+            status: {
+              in: [
+                ShipmentStatus.RECEIVED_AT_WAREHOUSE,
+                ShipmentStatus.PROCESSING,
+                ShipmentStatus.READY_FOR_DISPATCH,
+              ],
+            },
+          },
         ],
       },
       orderBy: { pickedUpAt: 'asc' },

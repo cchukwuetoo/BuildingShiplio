@@ -11,7 +11,10 @@ export class DriversService {
       where: {
         OR: [
           { status: ShipmentStatus.PENDING, assignedDriverId: null },
-          { assignedDriverId: driverId, status: { in: [ShipmentStatus.PICKUP_ASSIGNED] } },
+          {
+            assignedDriverId: driverId,
+            status: { in: [ShipmentStatus.PICKUP_ASSIGNED, ShipmentStatus.PICKED_UP] },
+          },
         ],
       },
       orderBy: { createdAt: 'asc' },

@@ -47,12 +47,18 @@ export class OtpService {
       return;
     }
 
-    await transporter.sendMail({
-      from: this.configService.get<string>('SMTP_FROM') ?? 'no-reply@shiplio.local',
-      to,
-      subject,
-      html,
-    });
+    try {
+      await transporter.sendMail({
+        from: this.configService.get<string>('SMTP_FROM') ?? 'no-reply@shiplio.local',
+        to,
+        subject,
+        html,
+      });
+    } catch (err) {
+      // Email delivery is best-effort — a transport failure must not break OTP
+      // creation or the flow that triggered it (shipment booking, registration…).
+      console.error(`Email delivery failed. To=${to} Subject=${subject}`, err);
+    }
   }
 
   private async invalidateExistingOtps(
