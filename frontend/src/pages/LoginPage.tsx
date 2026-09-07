@@ -13,11 +13,12 @@ function getErrorMessage(error: unknown): string {
 
 interface LoginPageProps {
   onLogin: (email: string, password: string) => Promise<void>
+  onBack?: () => void
 }
 
-type Mode = 'signin' | 'register' | 'verify'
+type Mode = 'signin' | 'register' | 'verify' | 'forgot' | 'reset'
 
-export default function LoginPage({ onLogin }: LoginPageProps) {
+export default function LoginPage({ onLogin, onBack }: LoginPageProps) {
   const [mode, setMode] = useState<Mode>('signin')
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
@@ -116,6 +117,64 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
       return
     }
 
+    if (mode === 'forgot') {
+      if (!email) {
+        setError('Enter the email address for your account.')
+        return
+      }
+      setLoading(true)
+      setError('')
+      setInfo('')
+      try {
+        await authAPI.forgotPassword(email)
+        setPendingEmail(email)
+        setOtpCode('')
+        setMode('reset')
+        setInfo('A 6-digit reset code was sent to your email. It expires soon.')
+      } catch (err: unknown) {
+        setError(getErrorMessage(err) || 'Could not send a reset code.')
+      } finally {
+        setLoading(false)
+      }
+      return
+    }
+
+    if (mode === 'reset') {
+      if (!otpCode || otpCode.length !== 6) {
+        setError('Enter the 6-digit code from your email.')
+        return
+      }
+      if (password.length < 8) {
+        setError('New password must be at least 8 characters.')
+        return
+      }
+      if (password !== confirmPassword) {
+        setError('Passwords do not match.')
+        return
+      }
+      setLoading(true)
+      setError('')
+      setInfo('')
+      try {
+        await authAPI.resetPassword({
+          email: pendingEmail || email,
+          otpCode,
+          newPassword: password,
+          confirmPassword,
+        })
+        setInfo('Password reset! Sign in with your new password.')
+        setMode('signin')
+        setOtpCode('')
+        setPassword('')
+        setConfirmPassword('')
+      } catch (err: unknown) {
+        setError(getErrorMessage(err) || 'That code did not work. Try again.')
+      } finally {
+        setLoading(false)
+      }
+      return
+    }
+
     if (!email || !password) {
       setError('Enter both email and password.')
       return
@@ -206,15 +265,24 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
 
       <section className="login-panel">
         <div className="login-card">
+          {onBack && (
+            <button type="button" className="resend-btn" onClick={onBack}>
+              ← Back to home
+            </button>
+          )}
           <h2>
             {mode === 'register' && 'Create account'}
             {mode === 'signin' && 'Sign in'}
             {mode === 'verify' && 'Verify your email'}
+            {mode === 'forgot' && 'Forgot password'}
+            {mode === 'reset' && 'Reset password'}
           </h2>
           <p>
             {mode === 'register' && 'Register as a customer to book pickups.'}
             {mode === 'signin' && 'Enter your credentials to continue.'}
             {mode === 'verify' && 'A 6-digit code was sent to your inbox.'}
+            {mode === 'forgot' && 'We will email you a 6-digit reset code.'}
+            {mode === 'reset' && 'Enter the code plus your new password.'}
           </p>
 
           <form onSubmit={handleSubmit}>
@@ -304,6 +372,14 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                     autoComplete="current-password"
                   />
                 </div>
+                <button
+                  type="button"
+                  className="resend-btn"
+                  onClick={() => switchMode('forgot')}
+                  disabled={loading}
+                >
+                  Forgot password?
+                </button>
               </>
             )}
 
@@ -334,6 +410,64 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
               </>
             )}
 
+            {mode === 'forgot' && (
+              <div className="form-group">
+                <label htmlFor="email">Email</label>
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@shiplio.dev"
+                  disabled={loading}
+                  autoComplete="username"
+                />
+              </div>
+            )}
+
+            {mode === 'reset' && (
+              <>
+                <div className="form-group">
+                  <label htmlFor="otpCode">6-digit code</label>
+                  <input
+                    id="otpCode"
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                    placeholder="000000"
+                    disabled={loading}
+                    autoComplete="one-time-code"
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="password">New password</label>
+                  <input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="At least 8 characters"
+                    disabled={loading}
+                    autoComplete="new-password"
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="confirmPassword">Confirm new password</label>
+                  <input
+                    id="confirmPassword"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Repeat your new password"
+                    disabled={loading}
+                    autoComplete="new-password"
+                  />
+                </div>
+              </>
+            )}
+
             <button type="submit" className="login-btn" disabled={loading}>
               {mode === 'verify'
                 ? loading
@@ -343,9 +477,17 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                   ? loading
                     ? 'Creating account…'
                     : 'Create account'
-                  : loading
-                    ? 'Signing in…'
-                    : 'Continue'}
+                  : mode === 'forgot'
+                    ? loading
+                      ? 'Sending code…'
+                      : 'Send reset code'
+                    : mode === 'reset'
+                      ? loading
+                        ? 'Resetting…'
+                        : 'Reset password'
+                      : loading
+                        ? 'Signing in…'
+                        : 'Continue'}
             </button>
           </form>
 
@@ -362,6 +504,13 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                 Already have an account?{' '}
                 <button type="button" onClick={() => switchMode('signin')}>
                   Sign in
+                </button>
+              </>
+            ) : mode === 'forgot' || mode === 'reset' ? (
+              <>
+                Remembered it?{' '}
+                <button type="button" onClick={() => switchMode('signin')}>
+                  Back to sign in
                 </button>
               </>
             ) : (

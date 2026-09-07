@@ -28,6 +28,14 @@ export const authAPI = {
     api.post('/auth/verify-otp', { email, otpCode, purpose }),
   resendOtp: (email: string, purpose: string) =>
     api.post('/auth/resend-otp', { email, purpose }),
+  forgotPassword: (email: string) =>
+    api.post('/auth/forgot-password', { email }),
+  resetPassword: (data: {
+    email: string
+    otpCode: string
+    newPassword: string
+    confirmPassword: string
+  }) => api.post('/auth/reset-password', data),
   logout: (refreshToken: string) => api.post('/auth/logout', { refreshToken }),
 }
 

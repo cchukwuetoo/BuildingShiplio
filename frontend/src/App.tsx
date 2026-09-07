@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { authAPI } from './api.js'
 import LoginPage from './pages/LoginPage.js'
+import LandingPage from './pages/LandingPage.js'
 import DriverDashboard from './pages/DriverDashboard.js'
 import WarehouseDashboard from './pages/WarehouseDashboard.js'
 import CustomerDashboard from './pages/CustomerDashboard.js'
@@ -15,6 +16,7 @@ function App() {
   const [userRole, setUserRole] = useState<string | null>(null)
   const [user, setUser] = useState<AuthUser | null>(null)
   const [loading, setLoading] = useState(true)
+  const [showAuth, setShowAuth] = useState(false)
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -81,7 +83,10 @@ function App() {
   }
 
   if (!isLoggedIn) {
-    return <LoginPage onLogin={handleLogin} />
+    if (showAuth) {
+      return <LoginPage onLogin={handleLogin} onBack={() => setShowAuth(false)} />
+    }
+    return <LandingPage onSignIn={() => setShowAuth(true)} />
   }
 
   if (userRole === 'USER') {

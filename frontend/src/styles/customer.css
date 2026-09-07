@@ -962,3 +962,635 @@
 .cust-dashboard .message {
   border-radius: 14px;
 }
+
+.cust-dashboard .form-container h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.cust-dashboard .form-container h3 svg {
+  color: var(--teal-dark);
+  flex-shrink: 0;
+}
+
+/* ===== Booking wizard ===== */
+.wiz-stepper {
+  display: flex;
+  align-items: flex-start;
+  list-style: none;
+  margin: 1.2rem 0 1.4rem;
+  padding: 0;
+}
+
+.wiz-step-item {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.wiz-step-item:last-child {
+  flex: 0 1 auto;
+}
+
+.wiz-step {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  background: none;
+  border: none;
+  padding: 0.2rem;
+  font: inherit;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.wiz-step-item.done .wiz-step {
+  color: var(--teal-dark);
+  cursor: pointer;
+}
+
+.wiz-step-item.current .wiz-step {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.wiz-step-num {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 0.82rem;
+  font-weight: 700;
+  background: #f1f5f9;
+  border: 2px solid var(--line);
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.wiz-step-item.done .wiz-step-num {
+  background: var(--teal);
+  border-color: var(--teal);
+  color: #fff;
+}
+
+.wiz-step-item.current .wiz-step-num {
+  background: #fff;
+  border-color: var(--teal-dark);
+  color: var(--teal-dark);
+  box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.16);
+}
+
+.wiz-step-label {
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.wiz-step-connector {
+  flex: 1;
+  height: 2px;
+  min-width: 12px;
+  background: var(--line);
+  border-radius: 2px;
+  margin: 0 0.6rem;
+}
+
+.wiz-step-connector.done {
+  background: var(--teal);
+}
+
+.wiz-subprogress {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--teal-dark);
+  margin-bottom: 0.8rem;
+}
+
+.wiz-layout {
+  display: flex;
+  gap: 1.25rem;
+  align-items: flex-start;
+}
+
+.wiz-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+/* Force full-width sections: fragment children of the flex column
+   must never shrink to content width on small screens */
+.wiz-main > * {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.cust-dashboard .form-container {
+  width: 100%;
+  max-width: 100%;
+}
+
+.wiz-side {
+  width: 320px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 84px;
+}
+
+.wiz-summary-mobile {
+  display: none;
+}
+
+.wiz-summary-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  box-shadow: var(--cust-shadow, var(--shadow));
+  padding: 1.2rem 1.25rem;
+}
+
+.wiz-summary-card h3 {
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.wiz-summary-card h3 svg {
+  color: var(--teal-dark);
+}
+
+.wiz-summary-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: none;
+  border: none;
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.95rem;
+  padding: 0;
+  color: var(--ink);
+}
+
+.wiz-summary-toggle span:first-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.wiz-summary-toggle svg {
+  color: var(--teal-dark);
+  transition: transform 0.2s;
+}
+
+.wiz-summary-toggle svg.rotated {
+  transform: rotate(180deg);
+}
+
+.wiz-summary-body {
+  padding-top: 0.2rem;
+}
+
+.wiz-summary-toggle + .wiz-summary-body {
+  margin-top: 1rem;
+}
+
+.wiz-route-mini {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  margin-bottom: 1rem;
+}
+
+.wiz-route-stop {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+}
+
+.wiz-route-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-top: 0.25rem;
+  flex-shrink: 0;
+}
+
+.wiz-route-dot.origin {
+  border: 3px solid var(--teal);
+  background: #fff;
+}
+
+.wiz-route-dot.destination {
+  background: var(--teal-dark);
+}
+
+.wiz-route-stop span {
+  display: block;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.wiz-route-stop strong {
+  font-size: 0.92rem;
+}
+
+.wiz-kv {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+}
+
+.wiz-kv > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--line);
+  font-size: 0.88rem;
+}
+
+.wiz-kv dt {
+  color: var(--muted);
+}
+
+.wiz-kv dd {
+  margin: 0;
+  font-weight: 600;
+  text-align: right;
+}
+
+.wiz-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 0.25rem;
+}
+
+.wiz-footer-left,
+.wiz-footer-right {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.wiz-draft-note {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.wiz-link-btn {
+  background: none;
+  border: none;
+  color: var(--success);
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-decoration: underline;
+  padding: 0.2rem;
+  white-space: nowrap;
+}
+
+/* Option cards */
+.wiz-option-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.wiz-option-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.7rem;
+}
+
+.wiz-option-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  text-align: left;
+  background: #f8fafc;
+  border: 2px solid var(--line);
+  border-radius: 18px;
+  padding: 1rem 1.1rem;
+  font: inherit;
+  color: var(--ink);
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  width: 100%;
+}
+
+.wiz-option-card:hover {
+  border-color: #94a3b8;
+}
+
+.wiz-option-card.selected {
+  border-color: var(--teal-dark);
+  background: rgba(13, 148, 136, 0.07);
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.12);
+}
+
+.wiz-radio {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid #cbd5e1;
+  background: #fff;
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+  position: relative;
+}
+
+.wiz-option-card.selected .wiz-radio {
+  border-color: var(--teal-dark);
+}
+
+.wiz-option-card.selected .wiz-radio::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: var(--teal-dark);
+}
+
+.wiz-option-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.wiz-option-text strong {
+  font-size: 0.92rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.wiz-option-text > span {
+  font-size: 0.84rem;
+  color: var(--muted);
+}
+
+.wiz-option-icon {
+  color: var(--teal-dark);
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+}
+
+/* Review */
+.wiz-review-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.8rem;
+}
+
+.wiz-review-head h3 {
+  margin: 0;
+}
+
+.wiz-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: none;
+  border: none;
+  color: var(--teal-dark);
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 0.3rem 0.4rem;
+  border-radius: 8px;
+}
+
+.wiz-edit-btn:hover {
+  background: rgba(13, 148, 136, 0.1);
+}
+
+.wiz-review-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.55rem 0;
+  border-top: 1px solid var(--line);
+  font-size: 0.9rem;
+}
+
+.wiz-review-row dt {
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.wiz-review-row dd {
+  margin: 0;
+  font-weight: 600;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+/* Grouped inputs */
+.wiz-input-group {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.wiz-input-group input {
+  flex: 1;
+  min-width: 0;
+}
+
+.wiz-input-group select {
+  flex: 0 0 76px;
+}
+
+.wiz-dims input {
+  text-align: center;
+}
+
+.wiz-dims select {
+  flex: 0 0 68px;
+}
+
+/* Fragile toggle switch */
+.wiz-switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 0.85rem 1rem;
+  cursor: pointer;
+}
+
+.wiz-switch-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.wiz-switch-text strong {
+  font-size: 0.9rem;
+}
+
+.wiz-switch-text > span {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.wiz-switch {
+  position: relative;
+  display: inline-block;
+  width: 46px;
+  height: 26px;
+  flex-shrink: 0;
+}
+
+.wiz-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.wiz-slider {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: #cbd5e1;
+  transition: background 0.2s;
+}
+
+.wiz-slider::before {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  left: 3px;
+  top: 3px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s;
+}
+
+.wiz-switch input:checked + .wiz-slider {
+  background: var(--teal);
+}
+
+.wiz-switch input:checked + .wiz-slider::before {
+  transform: translateX(20px);
+}
+
+.wiz-switch input:focus-visible + .wiz-slider {
+  outline: 2px solid var(--teal-dark);
+  outline-offset: 2px;
+}
+
+/* Wizard responsive */
+@media (max-width: 900px) {
+  .wiz-layout {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .wiz-side {
+    display: none;
+  }
+
+  .wiz-summary-mobile {
+    display: block;
+    margin-bottom: 1.1rem;
+  }
+
+  .wiz-layout {
+    flex-direction: column;
+  }
+}
+
+/* Dock the wizard actions above the mobile bottom nav so
+   Back/Continue stay visible while filling long forms */
+@media (max-width: 1024px) {
+  .wiz-footer {
+    position: sticky;
+    bottom: calc(74px + env(safe-area-inset-bottom));
+    z-index: 10;
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 0.6rem;
+    box-shadow: var(--cust-shadow, var(--shadow));
+  }
+}
+
+@media (max-width: 640px) {
+  .wiz-step-label {
+    display: none;
+  }
+
+  /* Stack two-column form rows full-width on phones */
+  .cust-dashboard .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .cust-dashboard .form-container {
+    padding: 1.15rem 1rem;
+  }
+
+  .wiz-input-group {
+    flex-wrap: wrap;
+  }
+
+  .wiz-input-group input {
+    flex: 1 1 110px;
+  }
+
+  .wiz-input-group select {
+    flex: 1 1 90px;
+  }
+
+  .wiz-dims input {
+    flex: 1 1 64px;
+  }
+
+  .wiz-step-item.current .wiz-step-label {
+    display: inline;
+  }
+
+  .wiz-option-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .wiz-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .wiz-footer-left,
+  .wiz-footer-right {
+    width: 100%;
+  }
+
+  .wiz-footer .action-btn {
+    flex: 1;
+    justify-content: center;
+  }
+}
