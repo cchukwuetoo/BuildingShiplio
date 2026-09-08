@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import { RefreshCw, Search, Route } from 'lucide-react'
+import { RefreshCw, Search } from 'lucide-react'
 import { shipmentsAPI } from '../../api.js'
-import ShipmentCard, { EmptyState } from '../../components/ShipmentCard.js'
+import { toShipmentList } from '../../lib/shipments.js'
+import { EmptyState } from '../../components/ShipmentCard.js'
+import ShipmentTable from '../../components/ShipmentTable.js'
 import { Shipment } from '../../types.js'
 import { CustomerView } from '../../components/CustomerSidebar.js'
 
@@ -9,7 +11,7 @@ interface MyShipmentsProps {
   onNavigate: (view: CustomerView, opts?: { shipmentId?: string }) => void
 }
 
-const STATUS_FILTERS = ['ALL', 'PENDING', 'PICKUP_ASSIGNED', 'PICKED_UP', 'RECEIVED_AT_WAREHOUSE', 'PROCESSING', 'READY_FOR_DISPATCH', 'CANCELLED']
+const STATUS_FILTERS = ['ALL', 'PENDING_PAYMENT', 'PENDING', 'PICKUP_ASSIGNED', 'PICKED_UP', 'RECEIVED_AT_WAREHOUSE', 'PROCESSING', 'READY_FOR_DISPATCH', 'CANCELLED']
 
 function getErrorMessage(error: unknown): string {
   if (typeof error === 'object' && error !== null && 'response' in error) {
@@ -32,7 +34,7 @@ export default function MyShipments({ onNavigate }: MyShipmentsProps) {
       setLoading(true)
       setError('')
       const response = await shipmentsAPI.getAll()
-      setShipments(response.data)
+      setShipments(toShipmentList(response.data))
     } catch (err: unknown) {
       setError(getErrorMessage(err) || 'Could not load your shipments.')
     } finally {
@@ -121,31 +123,14 @@ export default function MyShipments({ onNavigate }: MyShipmentsProps) {
         <EmptyState title="Nothing matches" body="Try a different search or status filter." />
       )}
 
-      {visible.map((shipment) => (
-        <ShipmentCard
-          key={shipment.id}
-          shipment={shipment}
-          actions={
-            <>
-              <button
-                className="action-btn btn-secondary"
-                onClick={() => onNavigate('track', { shipmentId: shipment.id })}
-              >
-                <Route size={16} /> Track
-              </button>
-              {shipment.status === 'PENDING' && (
-                <button
-                  className="action-btn btn-danger"
-                  onClick={() => void handleCancel(shipment.id)}
-                  disabled={cancellingId === shipment.id}
-                >
-                  {cancellingId === shipment.id ? 'Cancelling…' : 'Cancel shipment'}
-                </button>
-              )}
-            </>
-          }
+      {visible.length > 0 && (
+        <ShipmentTable
+          shipments={visible}
+          onView={(id) => onNavigate('track', { shipmentId: id })}
+          onCancel={(id) => void handleCancel(id)}
+          cancellingId={cancellingId}
         />
-      ))}
+      )}
     </div>
   )
 }

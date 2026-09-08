@@ -8,9 +8,10 @@ import {
   CircleAlert,
 } from 'lucide-react'
 import { shipmentsAPI } from '../../api.js'
-import { formatStatus, formatShipmentId } from '../../lib/format.js'
+import { toShipmentList } from '../../lib/shipments.js'
 import { Shipment } from '../../types.js'
-import ShipmentCard, { EmptyState } from '../../components/ShipmentCard.js'
+import { EmptyState } from '../../components/ShipmentCard.js'
+import ShipmentTable from '../../components/ShipmentTable.js'
 import { CustomerView } from '../../components/CustomerSidebar.js'
 
 interface OverviewProps {
@@ -18,9 +19,10 @@ interface OverviewProps {
   onNavigate: (view: CustomerView, opts?: { shipmentId?: string }) => void
 }
 
-function statusGroup(status: string): 'active' | 'ready' | 'cancelled' {
+function statusGroup(status: string): 'active' | 'ready' | 'cancelled' | 'awaiting' {
   if (status === 'CANCELLED') return 'cancelled'
   if (status === 'READY_FOR_DISPATCH') return 'ready'
+  if (status === 'PENDING_PAYMENT') return 'awaiting'
   return 'active'
 }
 
@@ -34,7 +36,7 @@ export default function Overview({ user, onNavigate }: OverviewProps) {
       setLoading(true)
       setError('')
       const response = await shipmentsAPI.getAll()
-      setShipments(response.data)
+      setShipments(toShipmentList(response.data))
     } catch {
       setError('Could not load your shipments.')
     } finally {
@@ -123,25 +125,11 @@ export default function Overview({ user, onNavigate }: OverviewProps) {
         />
       )}
 
-      {recent.map((shipment) => (
-        <ShipmentCard
-          key={shipment.id}
-          shipment={shipment}
-          actions={
-            <button
-              className="action-btn btn-secondary"
-              onClick={() => onNavigate('track', { shipmentId: shipment.id })}
-            >
-              <Route size={16} /> Track
-            </button>
-          }
+      {recent.length > 0 && (
+        <ShipmentTable
+          shipments={recent}
+          onView={(id) => onNavigate('track', { shipmentId: id })}
         />
-      ))}
-
-      {!loading && recent.length > 0 && (
-        <p className="shipment-kicker" style={{ marginTop: '0.6rem' }}>
-          Latest shipment ID: {formatShipmentId(recent[0].id)} · {formatStatus(recent[0].status)}
-        </p>
       )}
     </div>
   )

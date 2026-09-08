@@ -1,4 +1,5 @@
 const STATUS_LABELS: Record<string, string> = {
+  PENDING_PAYMENT: 'Awaiting payment',
   PENDING: 'Pending pickup',
   PICKUP_ASSIGNED: 'Assigned',
   PICKED_UP: 'Picked up',

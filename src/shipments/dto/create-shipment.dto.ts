@@ -90,4 +90,31 @@ export class CreateShipmentDto {
   @IsNumber()
   @Min(0)
   declaredValue?: number;
+
+  @IsOptional()
+  @IsString()
+  courierProvider?: string;
+
+  @IsOptional()
+  @IsString()
+  courierService?: string;
+
+  @IsOptional()
+  @IsString()
+  courierTimeframe?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  courierBasePrice?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  serviceFee?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  totalCost?: number;
 }

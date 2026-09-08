@@ -3,6 +3,7 @@ import { Check } from 'lucide-react'
 export const WIZARD_STEPS = [
   { label: 'Shipment details', short: 'Details' },
   { label: 'Delivery options', short: 'Options' },
+  { label: 'Courier & price', short: 'Courier' },
   { label: 'Review & book', short: 'Review' },
 ]
 

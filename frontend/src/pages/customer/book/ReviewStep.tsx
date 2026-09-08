@@ -1,4 +1,5 @@
 import { Pencil } from 'lucide-react'
+import { formatNaira } from '../../../lib/shipments.js'
 import { PACKAGING_LABELS, SPEED_LABELS, WizardData } from './wizard.js'
 
 interface ReviewStepProps {
@@ -72,6 +73,27 @@ export default function ReviewStep({ data, onEdit }: ReviewStepProps) {
           <Row label="Speed" value={SPEED_LABELS[data.speed]} />
         </dl>
       </div>
+
+      {data.selectedQuote && (
+        <div className="form-container">
+          <div className="wiz-review-head">
+            <h3>Courier & price</h3>
+            <button type="button" className="wiz-edit-btn" onClick={() => onEdit(2)}>
+              <Pencil size={14} /> Edit
+            </button>
+          </div>
+          <dl>
+            <Row
+              label="Courier"
+              value={`${data.selectedQuote.provider} · ${data.selectedQuote.service}`}
+            />
+            <Row label="Timeframe" value={data.selectedQuote.timeframe} />
+            <Row label="Courier base" value={formatNaira(data.selectedQuote.basePrice)} />
+            <Row label="Service fee" value={formatNaira(data.selectedQuote.serviceFee)} />
+            <Row label="Total" value={formatNaira(data.selectedQuote.total)} />
+          </dl>
+        </div>
+      )}
     </>
   )
 }

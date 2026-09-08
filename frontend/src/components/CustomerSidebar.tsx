@@ -10,6 +10,7 @@ import {
   PanelLeftOpen,
   X,
 } from 'lucide-react'
+import Logo from './Logo.js'
 import { AuthUser } from '../types.js'
 
 export const CUSTOMER_NAV = [
@@ -45,7 +46,7 @@ export default function Sidebar({
   return (
     <>
       <div className="cust-brand">
-        <div className="brand-mark">S</div>
+        <Logo size={38} />
         {!collapsed && (
           <div className="cust-brand-text">
             <strong>Shiplio</strong>

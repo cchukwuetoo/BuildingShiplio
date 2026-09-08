@@ -8,9 +8,12 @@ import {
   Boxes,
   Rocket,
   XCircle,
+  CreditCard,
+  KeyRound,
 } from 'lucide-react'
 import { shipmentsAPI } from '../../api.js'
 import { formatDate, formatStatus } from '../../lib/format.js'
+import { formatNaira, toShipmentList } from '../../lib/shipments.js'
 import { Shipment } from '../../types.js'
 
 interface TrackShipmentProps {
@@ -31,7 +34,11 @@ export default function TrackShipment({ initialShipmentId }: TrackShipmentProps)
   const [query, setQuery] = useState('')
   const [tracked, setTracked] = useState<Shipment | null>(null)
   const [loading, setLoading] = useState(true)
+  const [confirming, setConfirming] = useState(false)
+  const [code, setCode] = useState<string | null>(null)
+  const [codeLoading, setCodeLoading] = useState(false)
   const [error, setError] = useState('')
+  const [info, setInfo] = useState('')
 
   const fetchOne = async (shipmentId: string): Promise<Shipment | null> => {
     try {
@@ -50,14 +57,17 @@ export default function TrackShipment({ initialShipmentId }: TrackShipmentProps)
       setError('')
       try {
         const response = await shipmentsAPI.getAll()
-        const all = response.data
+        const all = toShipmentList(response.data)
         if (cancelled) return
         setOwnShipments(all)
         const pendingId = initialShipmentId
         const target = pendingId
           ? (await fetchOne(pendingId)) || all.find((s: Shipment) => s.id === pendingId) || null
           : null
-        if (!cancelled) setTracked(target)
+        if (!cancelled) {
+          setCode(null)
+          setTracked(target)
+        }
       } catch {
         if (!cancelled) setError('Could not load shipments.')
       } finally {
@@ -77,6 +87,7 @@ export default function TrackShipment({ initialShipmentId }: TrackShipmentProps)
     if (!needle) return
     setLoading(true)
     setError('')
+    setCode(null)
     const found = (await fetchOne(needle)) || ownShipments.find((s) => s.id.includes(needle) || needle.includes(s.id))
     if (found) {
       setTracked(found)
@@ -85,6 +96,43 @@ export default function TrackShipment({ initialShipmentId }: TrackShipmentProps)
       setError('No shipment matches that tracking ID.')
     }
     setLoading(false)
+  }
+
+  const handleRevealCode = async () => {
+    if (!tracked) return
+    setCodeLoading(true)
+    setError('')
+    try {
+      const response = await shipmentsAPI.getPickupCode(tracked.id)
+      setCode(response.data?.code ?? null)
+      if (!response.data?.code) setError('No active pickup code for this shipment.')
+    } catch (err: unknown) {
+      if (typeof err === 'object' && err !== null && 'response' in err) {
+        const axiosError = err as { response?: { data?: { message?: string } } }
+        setError(axiosError.response?.data?.message || 'No active pickup code for this shipment.')
+      } else {
+        setError('No active pickup code for this shipment.')
+      }
+    } finally {
+      setCodeLoading(false)
+    }
+  }
+
+  const handleConfirmPayment = async () => {
+    if (!tracked) return
+    setConfirming(true)
+    setError('')
+    try {
+      const response = await shipmentsAPI.confirmPayment(tracked.id)
+      const updated = response.data?.shipment ?? response.data
+      setTracked(updated)
+      setOwnShipments((prev) => prev.map((s) => (s.id === updated.id ? updated : s)))
+      setInfo('Payment confirmed. A driver can now accept the pickup.')
+    } catch {
+      setError('Could not confirm payment.')
+    } finally {
+      setConfirming(false)
+    }
   }
 
   const currentIndex = tracked ? STEP_DEFS.findIndex((s) => s.status === tracked.status) : -1
@@ -111,7 +159,6 @@ export default function TrackShipment({ initialShipmentId }: TrackShipmentProps)
         { label: 'Package', value: tracked.packageType },
         { label: 'Weight', value: `${tracked.estimatedWeight} ${tracked.weightUnit}` },
         { label: 'Fragile', value: tracked.isFragile ? 'Yes' : 'No' },
-        { label: 'Declared value', value: tracked.declaredValue ? `₦${tracked.declaredValue.toLocaleString()}` : '—' },
       ]
     : []
 
@@ -138,6 +185,7 @@ export default function TrackShipment({ initialShipmentId }: TrackShipmentProps)
             value={initialShipmentId ?? ''}
             onChange={(e) => {
               const id = e.target.value
+              setCode(null)
               if (id) void fetchOne(id).then((s) => setTracked(s))
             }}
             disabled={ownShipments.length === 0}
@@ -145,7 +193,7 @@ export default function TrackShipment({ initialShipmentId }: TrackShipmentProps)
             <option value="">— or choose one of yours —</option>
             {ownShipments.map((s) => (
               <option key={s.id} value={s.id}>
-                {s.id.slice(0, 8).toUpperCase()} · {s.pickupCity} → {s.deliveryCity}
+                {s.pickupCity} → {s.deliveryCity} · {s.packageType}
               </option>
             ))}
           </select>
@@ -156,6 +204,25 @@ export default function TrackShipment({ initialShipmentId }: TrackShipmentProps)
       </div>
 
       {error && <div className="message error">{error}</div>}
+      {info && <div className="message success">{info}</div>}
+
+      {!loading && tracked && tracked.status === 'PENDING_PAYMENT' && (
+        <div className="cust-card wiz-pay-card">
+          <div>
+            <strong>Awaiting payment</strong>
+            <p className="route-meta">
+              Pay {formatNaira(tracked.totalCost)} to release this shipment to drivers.
+            </p>
+          </div>
+          <button
+            className="action-btn btn-primary"
+            onClick={() => void handleConfirmPayment()}
+            disabled={confirming}
+          >
+            <CreditCard size={16} /> {confirming ? 'Confirming…' : 'Confirm payment'}
+          </button>
+        </div>
+      )}
 
       {loading && (
         <p className="loading-text">
@@ -175,6 +242,30 @@ export default function TrackShipment({ initialShipmentId }: TrackShipmentProps)
           </div>
 
           <div className="shipment-card">
+            {['PENDING', 'PICKUP_ASSIGNED'].includes(tracked.status) && (
+              <div className="wiz-otp-box">
+                <div>
+                  <strong>Rider pickup code</strong>
+                  <p className="route-meta">
+                    Show this code to your rider when they arrive for pickup.
+                  </p>
+                  {code && <p className="wiz-otp-code">{code}</p>}
+                </div>
+                {!code ? (
+                  <button
+                    className="action-btn btn-secondary"
+                    onClick={() => void handleRevealCode()}
+                    disabled={codeLoading}
+                  >
+                    <KeyRound size={16} /> {codeLoading ? 'Loading…' : 'Show code'}
+                  </button>
+                ) : (
+                  <button className="action-btn btn-secondary" onClick={() => setCode(null)}>
+                    Hide
+                  </button>
+                )}
+              </div>
+            )}
             <div className="route">
               <div className="route-stop">
                 <span className="route-label">Pickup</span>

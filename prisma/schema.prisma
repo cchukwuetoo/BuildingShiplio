@@ -16,6 +16,7 @@ enum UserRole {
 
 enum ShipmentStatus {
   DRAFT
+  PENDING_PAYMENT
   PENDING
   PICKUP_ASSIGNED
   PICKED_UP
@@ -86,6 +87,14 @@ model Shipment {
   dimensionUnit      String?
   isFragile          Boolean
   declaredValue      Float?
+  courierProvider    String?
+  courierService     String?
+  courierTimeframe   String?
+  courierBasePrice   Float?
+  serviceFee         Float?
+  totalCost          Float?
+  paidAt             DateTime?
+  paymentReference   String?
   status             ShipmentStatus  @default(PENDING)
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt

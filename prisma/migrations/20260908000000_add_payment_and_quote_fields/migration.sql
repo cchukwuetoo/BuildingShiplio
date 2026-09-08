@@ -1,0 +1,10 @@
+ALTER TYPE "ShipmentStatus" ADD VALUE 'PENDING_PAYMENT';
+
+ALTER TABLE "Shipment" ADD COLUMN "courierProvider" TEXT,
+ADD COLUMN "courierService" TEXT,
+ADD COLUMN "courierTimeframe" TEXT,
+ADD COLUMN "courierBasePrice" DOUBLE PRECISION,
+ADD COLUMN "serviceFee" DOUBLE PRECISION,
+ADD COLUMN "totalCost" DOUBLE PRECISION,
+ADD COLUMN "paidAt" TIMESTAMP(3),
+ADD COLUMN "paymentReference" TEXT;

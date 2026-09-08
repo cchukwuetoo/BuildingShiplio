@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { authAPI } from '../api.js'
+import Logo from '../components/Logo.js'
 import '../styles/login.css'
 
 function getErrorMessage(error: unknown): string {
@@ -265,6 +266,10 @@ export default function LoginPage({ onLogin, onBack }: LoginPageProps) {
 
       <section className="login-panel">
         <div className="login-card">
+          <div className="login-brand">
+            <Logo size={36} />
+            <strong>Shiplio</strong>
+          </div>
           {onBack && (
             <button type="button" className="resend-btn" onClick={onBack}>
               ← Back to home

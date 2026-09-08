@@ -393,6 +393,7 @@
 
 .cust-search {
   position: relative;
+  display: block;
   flex: 1 1 240px;
   max-width: 320px;
 }
@@ -918,6 +919,13 @@
   .cust-track-form {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  /* In a column layout flex-basis sets height — reset it so the
+     search field wraps the input instead of stretching tall */
+  .cust-track-form .cust-search {
+    flex: none;
+    width: 100%;
   }
 
   .cust-track-form select {
@@ -1539,6 +1547,357 @@
     padding: 0.6rem;
     box-shadow: var(--cust-shadow, var(--shadow));
   }
+}
+
+/* Courier rate cards */
+.wiz-courier-card {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  text-align: left;
+  background: #f8fafc;
+  border: 2px solid var(--line);
+  border-radius: 18px;
+  padding: 1rem 1.1rem;
+  font: inherit;
+  color: var(--ink);
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  width: 100%;
+}
+
+.wiz-courier-card:hover {
+  border-color: #94a3b8;
+}
+
+.wiz-courier-card.selected {
+  border-color: var(--teal-dark);
+  background: rgba(13, 148, 136, 0.07);
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.12);
+}
+
+.wiz-courier-card.selected .wiz-radio {
+  border-color: var(--teal-dark);
+}
+
+.wiz-courier-card.selected .wiz-radio::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: var(--teal-dark);
+}
+
+.wiz-courier-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.wiz-courier-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.wiz-courier-title strong {
+  font-size: 0.98rem;
+}
+
+.wiz-tag {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: var(--teal-dark);
+  color: #fff;
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+}
+
+.wiz-courier-sub {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.wiz-courier-breakdown {
+  font-size: 0.76rem;
+  color: var(--muted);
+}
+
+.wiz-courier-price {
+  text-align: right;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.wiz-courier-price strong {
+  font-size: 1.25rem;
+  letter-spacing: -0.02em;
+}
+
+.wiz-courier-price span {
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.wiz-refresh-rates {
+  margin-top: 0.9rem;
+}
+
+.wiz-selected-note {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Awaiting-payment card */
+.wiz-pay-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.wiz-pay-card strong {
+  font-size: 1rem;
+}
+
+.wiz-pay-card .route-meta {
+  margin-top: 0.2rem;
+}
+
+@media (max-width: 640px) {
+  .wiz-courier-price strong {
+    font-size: 1.05rem;
+  }
+
+  /* Stacked shipment cards instead of a sideways-scrolling table */
+  .ship-table-wrap {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    overflow: visible;
+  }
+
+  .ship-table-wrap .ship-table {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .ship-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+
+  .ship-table,
+  .ship-table tbody,
+  .ship-table tr,
+  .ship-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .ship-table tbody tr {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    box-shadow: var(--cust-shadow, var(--shadow));
+    padding: 0.5rem 0.2rem;
+    margin-bottom: 0.7rem;
+  }
+
+  .ship-table tbody tr:last-child {
+    margin-bottom: 0;
+  }
+
+  .ship-table td {
+    border: none;
+    padding: 0.45rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    min-width: 0;
+  }
+
+  .ship-table td > * {
+    min-width: 0;
+  }
+
+  .ship-table td::before {
+    content: attr(data-label);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .ship-table td.cell-main,
+  .ship-table td.ship-table-actions {
+    display: block;
+  }
+
+  .ship-table td.cell-main::before,
+  .ship-table td.ship-table-actions::before {
+    content: none;
+  }
+
+  .ship-table-desc {
+    max-width: none;
+  }
+
+  .ship-table-actions {
+    text-align: left;
+    padding-top: 0.2rem;
+  }
+}
+
+/* Shipment table */
+.ship-table-wrap {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  box-shadow: var(--cust-shadow, var(--shadow));
+  overflow-x: auto;
+}
+
+.ship-table {
+  width: 100%;
+  min-width: 680px;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.ship-table th {
+  text-align: left;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  font-weight: 700;
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid var(--line);
+  background: #f8fafc;
+  white-space: nowrap;
+}
+
+.ship-table td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+
+.ship-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.ship-table tbody tr {
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.ship-table tbody tr:hover,
+.ship-table tbody tr:focus-visible {
+  background: #f8fafc;
+  outline: none;
+}
+
+.ship-table-desc {
+  display: block;
+  max-width: 220px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 600;
+}
+
+.ship-table-sub {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.ship-table-route {
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.ship-table td.nowrap {
+  white-space: nowrap;
+}
+
+.ship-table .status-badge {
+  white-space: nowrap;
+}
+
+.ship-table-actions {
+  white-space: nowrap;
+  text-align: right;
+}
+
+.ship-table-actions .action-btn {
+  padding: 0.45rem 0.8rem;
+  font-size: 0.82rem;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.ship-table-actions .action-btn + .action-btn {
+  margin-left: 0.4rem;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Rider pickup code */
+.wiz-otp-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  background: #f8fafc;
+  border: 1px dashed #94a3b8;
+  border-radius: 18px;
+  padding: 1rem 1.1rem;
+  margin-bottom: 1.2rem;
+}
+
+.wiz-otp-box strong {
+  font-size: 0.95rem;
+}
+
+.wiz-otp-box .route-meta {
+  margin-top: 0.15rem;
+}
+
+.wiz-otp-code {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: 0.35em;
+  margin-top: 0.4rem;
+  color: var(--teal-dark);
 }
 
 @media (max-width: 640px) {

@@ -5,6 +5,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -13,6 +14,8 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { UserRole } from '../users/enums/user-role.enum';
 import { CreateShipmentDto } from './dto/create-shipment.dto';
+import { GetRatesDto } from './dto/get-rates.dto';
+import { ConfirmPaymentDto } from './dto/confirm-payment.dto';
 import { ShipmentsService } from './shipments.service';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -38,10 +41,36 @@ export class ShipmentsController {
     return this.shipmentsService.verifyDriverOtp(req.user.userId, body.shipmentId, body.code);
   }
 
+  @Post('rates')
+  @Roles(UserRole.USER)
+  async getRates(@Body() dto: GetRatesDto) {
+    return this.shipmentsService.getRates(dto);
+  }
+
+  @Patch(':id/confirm-payment')
+  @Roles(UserRole.USER)
+  async confirmPayment(@Req() req: any, @Param('id') id: string, @Body() dto: ConfirmPaymentDto) {
+    return this.shipmentsService.confirmPayment(req.user.userId, id, dto.paymentReference);
+  }
+
   @Get()
   @Roles(UserRole.USER)
-  async findAll(@Req() req: any) {
-    return this.shipmentsService.findAllForUser(req.user.userId);
+  async findAll(
+    @Req() req: any,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.shipmentsService.findAllForUser(
+      req.user.userId,
+      page ? Number(page) : 1,
+      limit ? Number(limit) : 20,
+    );
+  }
+
+  @Get(':id/pickup-code')
+  @Roles(UserRole.USER)
+  async getPickupCode(@Req() req: any, @Param('id') id: string) {
+    return this.shipmentsService.getPickupCode(req.user.userId, id);
   }
 
   @Get(':id')

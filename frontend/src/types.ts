@@ -27,6 +27,15 @@ export type Shipment = {
   receivedAt?: string
   processingStartedAt?: string
   readyForDispatchAt?: string
+  cancelledAt?: string
+  courierProvider?: string
+  courierService?: string
+  courierTimeframe?: string
+  courierBasePrice?: number
+  serviceFee?: number
+  totalCost?: number
+  paidAt?: string
+  paymentReference?: string
 }
 
 export type User = {

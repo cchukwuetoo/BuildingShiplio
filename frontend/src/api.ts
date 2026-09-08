@@ -62,12 +62,18 @@ export const warehouseAPI = {
 export const shipmentsAPI = {
   create: (data: any) =>
     api.post('/shipments', data),
-  getAll: () =>
-    api.get('/shipments'),
+  getAll: (page = 1, limit = 50) =>
+    api.get('/shipments', { params: { page, limit } }),
   getOne: (id: string) =>
     api.get(`/shipments/${id}`),
   cancel: (id: string) =>
     api.patch(`/shipments/${id}/cancel`),
+  getRates: (data: any) =>
+    api.post('/shipments/rates', data),
+  confirmPayment: (id: string, paymentReference?: string) =>
+    api.patch(`/shipments/${id}/confirm-payment`, { paymentReference }),
+  getPickupCode: (id: string) =>
+    api.get(`/shipments/${id}/pickup-code`),
 }
 
 export default api

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { authAPI } from './api.js'
 import LoginPage from './pages/LoginPage.js'
 import LandingPage from './pages/LandingPage.js'
+import Logo from './components/Logo.js'
 import DriverDashboard from './pages/DriverDashboard.js'
 import WarehouseDashboard from './pages/WarehouseDashboard.js'
 import CustomerDashboard from './pages/CustomerDashboard.js'
@@ -97,7 +98,7 @@ function App() {
     <div className="app-container">
       <header className="app-header">
         <div className="brand">
-          <div className="brand-mark">S</div>
+          <Logo size={36} />
           <div className="brand-text">
             <strong>Shiplio</strong>
             <span>Operations console</span>

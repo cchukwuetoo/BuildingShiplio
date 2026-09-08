@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { ChevronDown, MapPin, Package } from 'lucide-react'
+import { formatNaira } from '../../../lib/shipments.js'
 import { PACKAGING_LABELS, SPEED_LABELS, WizardData } from './wizard.js'
 
 interface SummaryPanelProps {
@@ -68,6 +69,20 @@ export default function SummaryPanel({ data, collapsible = false }: SummaryPanel
           <dt>Speed</dt>
           <dd>{SPEED_LABELS[data.speed]}</dd>
         </div>
+        {data.selectedQuote && (
+          <>
+            <div>
+              <dt>Courier</dt>
+              <dd>
+                {data.selectedQuote.provider} · {data.selectedQuote.service}
+              </dd>
+            </div>
+            <div>
+              <dt>Total</dt>
+              <dd>{formatNaira(data.selectedQuote.total)}</dd>
+            </div>
+          </>
+        )}
       </dl>
     </div>
   )

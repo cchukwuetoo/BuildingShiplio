@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import Logo from '../components/Logo.js'
 import {
   ArrowRight,
   Check,
@@ -112,7 +113,7 @@ export default function LandingPage({ onSignIn }: LandingPageProps) {
       <header className="land-nav">
         <div className="land-nav-inner">
           <span className="land-brand">
-            <span className="land-brand-mark">S</span>
+            <Logo size={34} />
             Shiplio
           </span>
           <nav className="land-links" aria-label="Primary">
@@ -186,6 +187,61 @@ export default function LandingPage({ onSignIn }: LandingPageProps) {
             </div>
 
             <div className="land-hero-visual" aria-hidden>
+              <span className="land-mascot-blob" />
+              <img
+                src="/shiplio-mascot.png"
+                alt=""
+                className="land-mascot land-mascot-hero"
+              />
+            </div>
+          </div>
+        </section>
+
+        <section className="land-section" id="how-it-works">
+          <p className="land-kicker">How it works</p>
+          <h2>From booking to doorstep in three steps</h2>
+          <div className="land-steps">
+            {STEPS.map((step, index) => {
+              const Icon = step.icon
+              return (
+                <article key={step.title} className="land-step-card">
+                  <span className="land-step-num">{index + 1}</span>
+                  <span className="land-step-icon">
+                    <Icon size={22} />
+                  </span>
+                  <h3>{step.title}</h3>
+                  <p>{step.body}</p>
+                </article>
+              )
+            })}
+          </div>
+        </section>
+
+        <section className="land-section land-flow">
+          <div className="land-flow-inner">
+            <div className="land-flow-copy">
+              <p className="land-kicker">Inside the app</p>
+              <h2>This is how shipment tracking works</h2>
+              <p>
+                Every booking opens a live shipment page: the route, a stage-by-stage
+                timeline, package details, and your rider pickup code — all in one place.
+              </p>
+              <ul className="land-flow-list">
+                <li>
+                  <Check size={16} /> Live status from booked to dispatched
+                </li>
+                <li>
+                  <Check size={16} /> Rider pickup code right on screen
+                </li>
+                <li>
+                  <Check size={16} /> Courier, price, and package breakdown
+                </li>
+              </ul>
+              <button type="button" className="land-btn-primary land-btn-lg" onClick={onSignIn}>
+                Track your first parcel <ArrowRight size={17} />
+              </button>
+            </div>
+            <div className="land-flow-visual" aria-hidden>
               <div className="land-track-card">
                 <div className="land-track-head">
                   <span className="land-live">
@@ -233,26 +289,6 @@ export default function LandingPage({ onSignIn }: LandingPageProps) {
           </div>
         </section>
 
-        <section className="land-section" id="how-it-works">
-          <p className="land-kicker">How it works</p>
-          <h2>From booking to doorstep in three steps</h2>
-          <div className="land-steps">
-            {STEPS.map((step, index) => {
-              const Icon = step.icon
-              return (
-                <article key={step.title} className="land-step-card">
-                  <span className="land-step-num">{index + 1}</span>
-                  <span className="land-step-icon">
-                    <Icon size={22} />
-                  </span>
-                  <h3>{step.title}</h3>
-                  <p>{step.body}</p>
-                </article>
-              )
-            })}
-          </div>
-        </section>
-
         <section className="land-section land-alt" id="features">
           <p className="land-kicker">Features</p>
           <h2>Everything you need to ship with confidence</h2>
@@ -296,17 +332,32 @@ export default function LandingPage({ onSignIn }: LandingPageProps) {
         </section>
 
         <section className="land-cta">
-          <h2>Ready to ship your first parcel?</h2>
-          <p>Create a free account and book a pickup in about two minutes.</p>
-          <button type="button" className="land-btn-light land-btn-lg" onClick={onSignIn}>
-            Get started free <ArrowRight size={17} />
-          </button>
+          <div className="land-cta-inner">
+            <div className="land-cta-mascot" aria-hidden>
+              <span className="land-speech">Tracked from pickup to doorstep!</span>
+              <span className="land-cta-badge">
+                <img src="/shiplio-mascot.png" alt="" loading="lazy" />
+              </span>
+              <span className="land-speed" aria-hidden>
+                <span />
+                <span />
+                <span />
+              </span>
+            </div>
+            <div className="land-cta-copy">
+              <h2>Ready to ship your first parcel?</h2>
+              <p>Create a free account and book a pickup in about two minutes.</p>
+              <button type="button" className="land-btn-light land-btn-lg" onClick={onSignIn}>
+                Get started free <ArrowRight size={17} />
+              </button>
+            </div>
+          </div>
         </section>
       </main>
 
       <footer className="land-footer">
         <span className="land-brand">
-          <span className="land-brand-mark">S</span>
+          <Logo size={34} />
           Shiplio
         </span>
         <p>© 2026 Shiplio Logistics. Pickup to dispatch, made visible.</p>

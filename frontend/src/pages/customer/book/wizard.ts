@@ -1,6 +1,27 @@
 export type PackagingChoice = 'own' | 'professional'
 export type SpeedChoice = 'standard' | 'priority'
 
+export interface FeeBreakdown {
+  courierBase: number
+  baseFee: number
+  pickupFee: number
+  volumetricMarkup: number
+  fragileSurcharge: number
+  serviceFee: number
+}
+
+export interface CourierQuote {
+  provider: string
+  service: string
+  timeframe: string
+  currency: string
+  basePrice: number
+  serviceFee: number
+  total: number
+  live: boolean
+  breakdown: FeeBreakdown
+}
+
 export interface WizardData {
   pickupAddress: string
   pickupCity: string
@@ -23,6 +44,7 @@ export interface WizardData {
   isFragile: boolean
   packaging: PackagingChoice
   speed: SpeedChoice
+  selectedQuote: CourierQuote | null
 }
 
 export const defaultWizardData: WizardData = {
@@ -44,6 +66,7 @@ export const defaultWizardData: WizardData = {
   isFragile: false,
   packaging: 'own',
   speed: 'standard',
+  selectedQuote: null,
 }
 
 export function validatePickup(data: WizardData): string | null {
@@ -79,6 +102,8 @@ export function validateDetails(data: WizardData): string | null {
  * Map wizard state onto the backend CreateShipmentDto.
  * Packaging/speed preferences are client-side only for now —
  * the shipments API has no fields for them yet.
+ * Totals are recomputed server-side; only the selected quote's
+ * provider identity and base price are sent.
  */
 export function toCreatePayload(data: WizardData): Record<string, unknown> {
   const payload: Record<string, unknown> = {
@@ -102,7 +127,31 @@ export function toCreatePayload(data: WizardData): Record<string, unknown> {
   if (data.width) payload.width = data.width
   if (data.height) payload.height = data.height
   if (data.length || data.width || data.height) payload.dimensionUnit = data.dimensionUnit
+  if (data.selectedQuote) {
+    payload.courierProvider = data.selectedQuote.provider
+    payload.courierService = data.selectedQuote.service
+    payload.courierTimeframe = data.selectedQuote.timeframe
+    payload.courierBasePrice = data.selectedQuote.basePrice
+  }
   return payload
+}
+
+/** Parcel-only payload for the courier rate search. */
+export function toRatesPayload(data: WizardData): Record<string, unknown> {
+  return {
+    pickupCity: data.pickupCity.trim(),
+    pickupState: data.pickupState.trim(),
+    deliveryCity: data.deliveryCity.trim(),
+    deliveryState: data.deliveryState.trim(),
+    packageType: data.packageType,
+    estimatedWeight: data.estimatedWeight,
+    weightUnit: data.weightUnit,
+    length: data.length,
+    width: data.width,
+    height: data.height,
+    dimensionUnit: data.dimensionUnit,
+    isFragile: data.isFragile,
+  }
 }
 
 export const PACKAGING_LABELS: Record<PackagingChoice, string> = {

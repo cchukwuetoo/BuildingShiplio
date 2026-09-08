@@ -520,11 +520,19 @@
   box-shadow: var(--shadow);
 }
 
+.login-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1.1rem;
+  font-size: 1.1rem;
+  letter-spacing: -0.02em;
+}
+
 .login-card h2 {
   font-size: 1.35rem;
   letter-spacing: -0.03em;
 }
-
 .login-card > p {
   color: var(--muted);
   margin: 0.25rem 0 1.2rem;
