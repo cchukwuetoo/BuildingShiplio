@@ -74,7 +74,7 @@ export default function ReviewStep({ data, onEdit }: ReviewStepProps) {
         </dl>
       </div>
 
-      {data.selectedQuote && (
+      {data.selectedRate && (
         <div className="form-container">
           <div className="wiz-review-head">
             <h3>Courier & price</h3>
@@ -85,12 +85,13 @@ export default function ReviewStep({ data, onEdit }: ReviewStepProps) {
           <dl>
             <Row
               label="Courier"
-              value={`${data.selectedQuote.provider} · ${data.selectedQuote.service}`}
+              value={`${data.selectedRate.carrier_name} · ${data.selectedRate.service}`}
             />
-            <Row label="Timeframe" value={data.selectedQuote.timeframe} />
-            <Row label="Courier base" value={formatNaira(data.selectedQuote.basePrice)} />
-            <Row label="Service fee" value={formatNaira(data.selectedQuote.serviceFee)} />
-            <Row label="Total" value={formatNaira(data.selectedQuote.total)} />
+            <Row label="Timeframe" value={data.selectedRate.estimated_delivery_days} />
+            <Row label="Courier base" value={formatNaira(data.selectedRate.base_carrier_fee)} />
+            <Row label="Service fee" value={formatNaira(data.selectedRate.shiplow_service_fee)} />
+            <Row label="Total" value={formatNaira(data.selectedRate.total_amount)} />
+            {data.dropOffHub && <Row label="Drop-off hub" value={data.dropOffHub} />}
           </dl>
         </div>
       )}

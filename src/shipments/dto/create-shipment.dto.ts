@@ -117,4 +117,8 @@ export class CreateShipmentDto {
   @IsNumber()
   @Min(0)
   totalCost?: number;
+
+  @IsOptional()
+  @IsString()
+  dropOffHubAddress?: string;
 }

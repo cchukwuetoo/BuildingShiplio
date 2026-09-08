@@ -11,7 +11,7 @@ import OptionsStep from './book/OptionsStep.js'
 import CourierStep from './book/CourierStep.js'
 import ReviewStep from './book/ReviewStep.js'
 import {
-  CourierQuote,
+  CarrierRate,
   defaultWizardData,
   PackagingChoice,
   SpeedChoice,
@@ -66,7 +66,7 @@ export default function BookShipment({ onNavigate }: BookShipmentProps) {
     // A changed parcel invalidates the previously selected quote.
     setData((prev) => ({
       ...prev,
-      selectedQuote: null,
+      selectedRate: null,
       [name]:
         type === 'checkbox'
           ? (e.target as HTMLInputElement).checked
@@ -82,8 +82,8 @@ export default function BookShipment({ onNavigate }: BookShipmentProps) {
     setData((prev) => ({ ...prev, [field]: value }))
   }
 
-  const handleSelectQuote = (quote: CourierQuote) => {
-    setData((prev) => ({ ...prev, selectedQuote: quote }))
+  const handleSelectRate = (rate: CarrierRate, dropOffHub: string | null) => {
+    setData((prev) => ({ ...prev, selectedRate: rate, dropOffHub }))
     setError('')
   }
 
@@ -118,7 +118,7 @@ export default function BookShipment({ onNavigate }: BookShipmentProps) {
       return
     }
     if (step === 2) {
-      if (!data.selectedQuote) {
+      if (!data.selectedRate) {
         setError('Choose a courier to continue.')
         return
       }
@@ -167,7 +167,7 @@ export default function BookShipment({ onNavigate }: BookShipmentProps) {
       scrollTop()
       return
     }
-    if (!data.selectedQuote) {
+    if (!data.selectedRate) {
       setError('Choose a courier before booking.')
       setStep(2)
       scrollTop()
@@ -311,7 +311,7 @@ export default function BookShipment({ onNavigate }: BookShipmentProps) {
         <div className="wiz-main">
           {step === 0 && <DetailsStep data={data} onChange={handleChange} section={currentSection} />}
           {step === 1 && <OptionsStep data={data} onSelect={handleSelect} />}
-          {step === 2 && <CourierStep data={data} onSelectQuote={handleSelectQuote} />}
+          {step === 2 && <CourierStep data={data} onSelectRate={handleSelectRate} />}
           {step === 3 && <ReviewStep data={data} onEdit={handleStepperGo} />}
 
           <div className="wiz-footer">

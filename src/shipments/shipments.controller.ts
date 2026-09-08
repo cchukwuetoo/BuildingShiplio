@@ -14,14 +14,18 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { UserRole } from '../users/enums/user-role.enum';
 import { CreateShipmentDto } from './dto/create-shipment.dto';
-import { GetRatesDto } from './dto/get-rates.dto';
+import { GetTerminalRatesDto } from './dto/get-terminal-rates.dto';
 import { ConfirmPaymentDto } from './dto/confirm-payment.dto';
 import { ShipmentsService } from './shipments.service';
+import { TerminalService } from './terminal/terminal.service';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('shipments')
 export class ShipmentsController {
-  constructor(private readonly shipmentsService: ShipmentsService) {}
+  constructor(
+    private readonly shipmentsService: ShipmentsService,
+    private readonly terminal: TerminalService,
+  ) {}
 
   @Post()
   @Roles(UserRole.USER)
@@ -43,8 +47,8 @@ export class ShipmentsController {
 
   @Post('rates')
   @Roles(UserRole.USER)
-  async getRates(@Body() dto: GetRatesDto) {
-    return this.shipmentsService.getRates(dto);
+  async getRates(@Body() dto: GetTerminalRatesDto) {
+    return this.terminal.getRates(dto);
   }
 
   @Patch(':id/confirm-payment')

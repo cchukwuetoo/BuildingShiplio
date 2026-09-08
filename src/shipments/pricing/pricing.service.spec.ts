@@ -1,11 +1,10 @@
 import {
-  PricingService,
+  ADAPTERS,
   computeFee,
   toCentimeters,
   toKilograms,
   volumetricWeightKg,
 } from './pricing.service';
-import { GetRatesDto } from '../dto/get-rates.dto';
 
 const parcel = {
   pickupCity: 'Lagos',
@@ -59,27 +58,12 @@ describe('PricingService fee engine', () => {
   });
 });
 
-describe('PricingService.getQuotes', () => {
-  it('returns three NGN quotes sorted by total with a full breakdown', async () => {
-    const service = new PricingService();
-    const dto = Object.assign(new GetRatesDto(), parcel);
-    const { quotes } = await service.getQuotes(dto);
-
-    expect(quotes).toHaveLength(3);
-    expect(quotes.map((q) => q.provider)).toEqual(['Sendbox', 'GIG Logistics', 'Kwik']);
-    for (const quote of quotes) {
-      expect(quote.currency).toBe('NGN');
-      expect(quote.live).toBe(false);
-      expect(quote.total).toBe(quote.basePrice + quote.serviceFee);
-      expect(quote.breakdown.serviceFee).toBe(
-        quote.breakdown.baseFee +
-          quote.breakdown.pickupFee +
-          quote.breakdown.volumetricMarkup +
-          quote.breakdown.fragileSurcharge,
-      );
+describe('domestic courier adapters', () => {
+  it('exposes three demo adapters with timeframes', () => {
+    expect(ADAPTERS.map((a) => a.provider)).toEqual(['GIG Logistics', 'Kwik', 'Sendbox']);
+    for (const adapter of ADAPTERS) {
+      expect(adapter.timeframe).toBeTruthy();
+      expect(adapter.service).toBeTruthy();
     }
-    const sendbox = quotes[0];
-    expect(sendbox.basePrice).toBe(3800);
-    expect(sendbox.total).toBe(5870);
   });
 });

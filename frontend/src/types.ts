@@ -36,6 +36,7 @@ export type Shipment = {
   totalCost?: number
   paidAt?: string
   paymentReference?: string
+  dropOffHubAddress?: string
 }
 
 export type User = {

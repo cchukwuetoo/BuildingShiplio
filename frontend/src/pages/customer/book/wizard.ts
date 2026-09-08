@@ -10,16 +10,18 @@ export interface FeeBreakdown {
   serviceFee: number
 }
 
-export interface CourierQuote {
-  provider: string
+export interface CarrierRate {
+  rate_id: string
+  carrier_name: string
+  carrier_logo: string | null
   service: string
-  timeframe: string
+  estimated_delivery_days: string
+  base_carrier_fee: number
+  shiplow_service_fee: number
+  total_amount: number
   currency: string
-  basePrice: number
-  serviceFee: number
-  total: number
   live: boolean
-  breakdown: FeeBreakdown
+  breakdown?: FeeBreakdown
 }
 
 export interface WizardData {
@@ -44,7 +46,8 @@ export interface WizardData {
   isFragile: boolean
   packaging: PackagingChoice
   speed: SpeedChoice
-  selectedQuote: CourierQuote | null
+  selectedRate: CarrierRate | null
+  dropOffHub: string | null
 }
 
 export const defaultWizardData: WizardData = {
@@ -66,7 +69,8 @@ export const defaultWizardData: WizardData = {
   isFragile: false,
   packaging: 'own',
   speed: 'standard',
-  selectedQuote: null,
+  selectedRate: null,
+  dropOffHub: null,
 }
 
 export function validatePickup(data: WizardData): string | null {
@@ -127,30 +131,44 @@ export function toCreatePayload(data: WizardData): Record<string, unknown> {
   if (data.width) payload.width = data.width
   if (data.height) payload.height = data.height
   if (data.length || data.width || data.height) payload.dimensionUnit = data.dimensionUnit
-  if (data.selectedQuote) {
-    payload.courierProvider = data.selectedQuote.provider
-    payload.courierService = data.selectedQuote.service
-    payload.courierTimeframe = data.selectedQuote.timeframe
-    payload.courierBasePrice = data.selectedQuote.basePrice
+  if (data.selectedRate) {
+    payload.courierProvider = data.selectedRate.carrier_name
+    payload.courierService = data.selectedRate.service
+    payload.courierTimeframe = data.selectedRate.estimated_delivery_days
+    payload.courierBasePrice = data.selectedRate.base_carrier_fee
   }
+  if (data.dropOffHub) payload.dropOffHubAddress = data.dropOffHub
   return payload
 }
 
-/** Parcel-only payload for the courier rate search. */
+const KG_PER_LB = 0.453592
+const CM_PER_IN = 2.54
+
+/** Parcel-only payload for the courier rate search (nested terminal contract). */
 export function toRatesPayload(data: WizardData): Record<string, unknown> {
+  const toCm = (value?: number) =>
+    value === undefined ? undefined : data.dimensionUnit === 'in' ? value * CM_PER_IN : value
+  const weightKg =
+    data.weightUnit === 'lbs' ? data.estimatedWeight * KG_PER_LB : data.estimatedWeight
   return {
-    pickupCity: data.pickupCity.trim(),
-    pickupState: data.pickupState.trim(),
-    deliveryCity: data.deliveryCity.trim(),
-    deliveryState: data.deliveryState.trim(),
-    packageType: data.packageType,
-    estimatedWeight: data.estimatedWeight,
-    weightUnit: data.weightUnit,
-    length: data.length,
-    width: data.width,
-    height: data.height,
-    dimensionUnit: data.dimensionUnit,
-    isFragile: data.isFragile,
+    pickup: {
+      city: data.pickupCity.trim(),
+      state: data.pickupState.trim(),
+      country: 'NG',
+    },
+    delivery: {
+      city: data.deliveryCity.trim(),
+      state: data.deliveryState.trim(),
+      country: 'NG',
+    },
+    parcel: {
+      weight_kg: Math.round(weightKg * 1000) / 1000,
+      length_cm: toCm(data.length),
+      width_cm: toCm(data.width),
+      height_cm: toCm(data.height),
+      is_fragile: data.isFragile,
+      package_type: data.packageType,
+    },
   }
 }
 

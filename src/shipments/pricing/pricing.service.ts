@@ -1,11 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { GetRatesDto } from '../dto/get-rates.dto';
-import {
-  CourierQuote,
-  FeeBreakdown,
-  RateParcel,
-  RatesResponse,
-} from './quote.interface';
+import { FeeBreakdown, RateParcel } from './quote.interface';
 
 const DEFAULT_BASE_FEE = 1000;
 const DEFAULT_PICKUP_FEE = 500;
@@ -13,13 +6,23 @@ const DEFAULT_VOLUMETRIC_DIVISOR = 5000;
 const DEFAULT_VOLUMETRIC_RATE_PER_KG = 800;
 const DEFAULT_FRAGILE_RATE = 0.15;
 const DEFAULT_INTERSTATE_SURCHARGE = 1500;
-const LIVE_TIMEOUT_MS = 8000;
 
 function envNumber(name: string, fallback: number): number {
   const raw = process.env[name];
   if (raw === undefined || raw === '') return fallback;
   const parsed = Number(raw);
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
+}
+
+/** First defined env value wins — supports documented aliases. */
+function envNumberAny(names: string[], fallback: number): number {
+  for (const name of names) {
+    const raw = process.env[name];
+    if (raw === undefined || raw === '') continue;
+    const parsed = Number(raw);
+    if (Number.isFinite(parsed) && parsed >= 0) return parsed;
+  }
+  return fallback;
 }
 
 export function toKilograms(weight: number, unit: string): number {
@@ -54,7 +57,7 @@ export function computeFee(
   volumetricKg: number,
   isFragile: boolean,
 ): FeeBreakdown {
-  const baseFee = envNumber('SHIPLOW_BASE_FEE', DEFAULT_BASE_FEE);
+  const baseFee = envNumberAny(['SHIPLOW_BASE_FEE', 'SHIPLOW_BASE_HANDLING_FEE_NGN'], DEFAULT_BASE_FEE);
   const pickupFee = envNumber('PICKUP_FEE', DEFAULT_PICKUP_FEE);
   const volumetricRate = envNumber('VOLUMETRIC_RATE_PER_KG', DEFAULT_VOLUMETRIC_RATE_PER_KG);
   const fragileRate = envNumber('FRAGILE_RATE', DEFAULT_FRAGILE_RATE);
@@ -74,12 +77,7 @@ export function computeFee(
   };
 }
 
-interface AdapterResult {
-  base: number;
-  live: boolean;
-}
-
-interface CourierAdapter {
+export interface CourierAdapter {
   provider: string;
   service: string;
   timeframe: string;
@@ -88,14 +86,14 @@ interface CourierAdapter {
   envPrefix: string;
 }
 
-interface NormalizedParcel extends RateParcel {
+export interface NormalizedParcel extends RateParcel {
   actualKg: number;
   volumetricKg: number;
   chargeableKg: number;
   interstate: boolean;
 }
 
-const ADAPTERS: CourierAdapter[] = [
+export const ADAPTERS: CourierAdapter[] = [
   {
     provider: 'GIG Logistics',
     service: 'Standard',
@@ -118,77 +116,3 @@ const ADAPTERS: CourierAdapter[] = [
     demoBase: (p) => 1500 + 320 * p.chargeableKg + (p.interstate ? DEFAULT_INTERSTATE_SURCHARGE : 0),
   },
 ];
-
-@Injectable()
-export class PricingService {
-  private readonly logger = new Logger(PricingService.name);
-
-  async getQuotes(dto: GetRatesDto): Promise<RatesResponse> {
-    const parcel = this.normalize(dto);
-    const results = await Promise.all(
-      ADAPTERS.map(async (adapter): Promise<CourierQuote> => {
-        const { base, live } = await this.fetchBase(adapter, parcel, dto);
-        const breakdown = computeFee(base, parcel.actualKg, parcel.volumetricKg, parcel.isFragile);
-        return {
-          provider: adapter.provider,
-          service: adapter.service,
-          timeframe: adapter.timeframe,
-          currency: 'NGN',
-          basePrice: breakdown.courierBase,
-          serviceFee: breakdown.serviceFee,
-          total: breakdown.courierBase + breakdown.serviceFee,
-          live,
-          breakdown,
-        };
-      }),
-    );
-    results.sort((a, b) => a.total - b.total);
-    return { quotes: results };
-  }
-
-  normalize(dto: GetRatesDto): NormalizedParcel {
-    const actualKg = Math.max(0, toKilograms(dto.estimatedWeight, dto.weightUnit));
-    const volumetricKg = volumetricWeightKg(dto);
-    return {
-      ...dto,
-      actualKg,
-      volumetricKg,
-      chargeableKg: Math.max(actualKg, volumetricKg),
-      interstate:
-        dto.pickupState.trim().toLowerCase() !== dto.deliveryState.trim().toLowerCase(),
-    };
-  }
-
-  private async fetchBase(
-    adapter: CourierAdapter,
-    parcel: NormalizedParcel,
-    dto: GetRatesDto,
-  ): Promise<AdapterResult> {
-    const url = process.env[`COURIER_${adapter.envPrefix}_API_URL`];
-    const key = process.env[`COURIER_${adapter.envPrefix}_API_KEY`];
-    if (!url || !key) {
-      return { base: Math.round(adapter.demoBase(parcel)), live: false };
-    }
-    try {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), LIVE_TIMEOUT_MS);
-      const response = await fetch(`${url}/rates`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
-        body: JSON.stringify(dto),
-        signal: controller.signal,
-      });
-      clearTimeout(timer);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const body = (await response.json()) as { price?: number; total?: number; amount?: number };
-      const base = Number(body.price ?? body.total ?? body.amount);
-      if (!Number.isFinite(base) || base < 0) throw new Error('Invalid live price');
-      return { base: Math.round(base), live: true };
-    } catch (error) {
-      this.logger.warn(
-        `Live quote from ${adapter.provider} failed, using demo rate: ${(error as Error).message}`,
-      );
-      return { base: Math.round(adapter.demoBase(parcel)), live: false };
-    }
-  }
-}

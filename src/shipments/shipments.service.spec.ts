@@ -1,7 +1,6 @@
 import { ForbiddenException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ShipmentsService } from './shipments.service';
-import { PricingService } from './pricing/pricing.service';
 import { PrismaService } from '../database/prisma.service';
 import { UserRole } from '../users/enums/user-role.enum';
 
@@ -47,7 +46,6 @@ describe('ShipmentsService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ShipmentsService,
-        PricingService,
         { provide: PrismaService, useValue: prisma },
         { provide: 'OTP_SERVICE', useValue: otpService },
       ],

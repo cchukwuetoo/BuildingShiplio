@@ -11,14 +11,12 @@ import { OTP_SERVICE } from '../otp/otp.module';
 import { UserRole } from '../users/enums/user-role.enum';
 import { ShipmentStatus } from './enums/shipment-status.enum';
 import { CreateShipmentDto } from './dto/create-shipment.dto';
-import { GetRatesDto } from './dto/get-rates.dto';
-import { PricingService, computeFee, toKilograms, volumetricWeightKg } from './pricing/pricing.service';
+import { computeFee, toKilograms, volumetricWeightKg } from './pricing/pricing.service';
 
 @Injectable()
 export class ShipmentsService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly pricing: PricingService,
     @Inject(OTP_SERVICE)
     private readonly otpService: {
       createAndSendOtp: (
@@ -35,10 +33,6 @@ export class ShipmentsService {
       ) => Promise<any>;
     },
   ) {}
-
-  async getRates(dto: GetRatesDto) {
-    return this.pricing.getQuotes(dto);
-  }
 
   async create(userId: string, dto: CreateShipmentDto, role?: UserRole) {
     if (role && ![UserRole.USER].includes(role)) {
@@ -106,6 +100,7 @@ export class ShipmentsService {
         courierBasePrice: dto.courierBasePrice ?? null,
         serviceFee: pricing?.serviceFee ?? null,
         totalCost: pricing?.totalCost ?? null,
+        dropOffHubAddress: dto.dropOffHubAddress ?? null,
         status: hasQuote ? ShipmentStatus.PENDING_PAYMENT : ShipmentStatus.PENDING,
       },
     });

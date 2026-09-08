@@ -69,17 +69,17 @@ export default function SummaryPanel({ data, collapsible = false }: SummaryPanel
           <dt>Speed</dt>
           <dd>{SPEED_LABELS[data.speed]}</dd>
         </div>
-        {data.selectedQuote && (
+        {data.selectedRate && (
           <>
             <div>
               <dt>Courier</dt>
               <dd>
-                {data.selectedQuote.provider} · {data.selectedQuote.service}
+                {data.selectedRate.carrier_name} · {data.selectedRate.service}
               </dd>
             </div>
             <div>
               <dt>Total</dt>
-              <dd>{formatNaira(data.selectedQuote.total)}</dd>
+              <dd>{formatNaira(data.selectedRate.total_amount)}</dd>
             </div>
           </>
         )}

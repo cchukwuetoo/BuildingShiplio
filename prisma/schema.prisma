@@ -95,6 +95,7 @@ model Shipment {
   totalCost          Float?
   paidAt             DateTime?
   paymentReference   String?
+  dropOffHubAddress  String?
   status             ShipmentStatus  @default(PENDING)
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
