@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { RefreshCw, Search, Route } from 'lucide-react'
+import { RefreshCw, Search, Route, KeyRound } from 'lucide-react'
 import { shipmentsAPI } from '../../api.js'
 import ShipmentCard, { EmptyState } from '../../components/ShipmentCard.js'
 import { Shipment } from '../../types.js'
@@ -133,6 +133,14 @@ export default function MyShipments({ onNavigate }: MyShipmentsProps) {
               >
                 <Route size={16} /> Track
               </button>
+              {(shipment.status === 'PENDING' || shipment.status === 'PICKUP_ASSIGNED') && (
+                <button
+                  className="action-btn btn-primary"
+                  onClick={() => onNavigate('pickup', { shipmentId: shipment.id })}
+                >
+                  <KeyRound size={16} /> Pickup code
+                </button>
+              )}
               {shipment.status === 'PENDING' && (
                 <button
                   className="action-btn btn-danger"

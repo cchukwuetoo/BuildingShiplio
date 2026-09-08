@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Patch, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Req, UseGuards } from '@nestjs/common';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -22,7 +22,11 @@ export class DriversController {
   }
 
   @Patch('shipments/:id/pickup')
-  markPickedUp(@Req() req: any, @Param('id') shipmentId: string) {
-    return this.driversService.markPickedUp(req.user.userId, shipmentId);
+  markPickedUp(
+    @Req() req: any,
+    @Param('id') shipmentId: string,
+    @Body() body: { code: string },
+  ) {
+    return this.driversService.markPickedUp(req.user.userId, shipmentId, body?.code);
   }
 }

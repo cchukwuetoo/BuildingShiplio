@@ -32,10 +32,10 @@ export class ShipmentsController {
     return this.shipmentsService.cancel(req.user.userId, id);
   }
 
-  @Post('verify-driver-otp')
+  @Get(':id/pickup-otp')
   @Roles(UserRole.USER)
-  async verifyDriverOtp(@Req() req: any, @Body() body: { shipmentId: string; code: string }) {
-    return this.shipmentsService.verifyDriverOtp(req.user.userId, body.shipmentId, body.code);
+  async getPickupOtp(@Req() req: any, @Param('id') id: string) {
+    return this.shipmentsService.getPickupOtp(req.user.userId, id);
   }
 
   @Get()

@@ -36,8 +36,8 @@ export const driversAPI = {
     api.get('/drivers/shipments'),
   accept: (shipmentId: string) =>
     api.patch(`/drivers/shipments/${shipmentId}/accept`),
-  markPickedUp: (shipmentId: string) =>
-    api.patch(`/drivers/shipments/${shipmentId}/pickup`),
+  markPickedUp: (shipmentId: string, code: string) =>
+    api.patch(`/drivers/shipments/${shipmentId}/pickup`, { code }),
 }
 
 export const warehouseAPI = {
@@ -60,6 +60,8 @@ export const shipmentsAPI = {
     api.get(`/shipments/${id}`),
   cancel: (id: string) =>
     api.patch(`/shipments/${id}/cancel`),
+  getPickupOtp: (id: string) =>
+    api.get(`/shipments/${id}/pickup-otp`),
 }
 
 export default api

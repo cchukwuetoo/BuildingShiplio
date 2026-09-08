@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { PackagePlus, Route } from 'lucide-react'
+import { PackagePlus, Route, KeyRound } from 'lucide-react'
 import { shipmentsAPI } from '../../api.js'
 import { CustomerView } from '../../components/CustomerSidebar.js'
 
@@ -103,9 +103,19 @@ export default function BookShipment({ onNavigate }: BookShipmentProps) {
           We&apos;ve created shipment <strong>#{createdId.slice(0, 8).toUpperCase()}</strong>. You can follow
           it in real time.
         </div>
+        <div className="message">
+          <strong>Next:</strong> when the driver arrives for pickup, show them your pickup code so
+          they can confirm the collection.
+        </div>
         <div className="cust-quick-actions">
           <button
             className="action-btn btn-primary"
+            onClick={() => onNavigate('pickup', { shipmentId: createdId })}
+          >
+            <KeyRound size={17} /> Show pickup code
+          </button>
+          <button
+            className="action-btn btn-secondary"
             onClick={() => onNavigate('track', { shipmentId: createdId })}
           >
             <Route size={17} /> Track it now

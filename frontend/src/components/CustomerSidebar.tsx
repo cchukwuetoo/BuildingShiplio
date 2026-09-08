@@ -3,6 +3,7 @@ import {
   PackagePlus,
   Package,
   Route,
+  KeyRound,
   Settings,
   LifeBuoy,
   LogOut,
@@ -17,6 +18,7 @@ export const CUSTOMER_NAV = [
   { id: 'book', label: 'Book a shipment', icon: PackagePlus },
   { id: 'shipments', label: 'My shipments', icon: Package },
   { id: 'track', label: 'Track package', icon: Route },
+  { id: 'pickup', label: 'Pickup code', icon: KeyRound },
   { id: 'settings', label: 'Settings', icon: Settings },
   { id: 'support', label: 'Help & support', icon: LifeBuoy },
 ] as const

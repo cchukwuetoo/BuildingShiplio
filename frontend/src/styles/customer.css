@@ -962,3 +962,107 @@
 .cust-dashboard .message {
   border-radius: 14px;
 }
+
+/* ===== Pickup code screen ===== */
+.cust-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.cust-field > span {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.cust-field select {
+  width: 100%;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  font-size: 0.92rem;
+  background: white;
+  color: var(--ink);
+}
+
+.otp-code-card {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  box-shadow: var(--cust-shadow);
+  padding: 1.5rem;
+  margin-bottom: 1.2rem;
+  text-align: center;
+}
+
+.otp-code-head {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  text-align: left;
+  margin-bottom: 1.1rem;
+}
+
+.otp-code-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: #f0fdfa;
+  color: var(--teal-dark);
+  flex-shrink: 0;
+}
+
+.otp-code-head strong {
+  display: block;
+  font-size: 0.98rem;
+}
+
+.otp-code-head span {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.otp-digits {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  margin: 0.5rem 0 0.9rem;
+}
+
+.otp-digits span {
+  flex: 1 1 0;
+  max-width: 58px;
+  aspect-ratio: 3 / 4;
+  display: grid;
+  place-items: center;
+  font-size: clamp(1.6rem, 7vw, 2.2rem);
+  font-weight: 800;
+  letter-spacing: 0;
+  color: var(--ink);
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.otp-code-meta {
+  font-size: 0.86rem;
+  color: var(--muted);
+  margin-bottom: 1rem;
+}
+
+.otp-code-card .action-btn {
+  margin: 0 auto;
+}
+
+@media (max-width: 560px) {
+  .otp-code-card {
+    padding: 1.2rem;
+  }
+
+  .otp-digits {
+    gap: 0.35rem;
+  }
+}

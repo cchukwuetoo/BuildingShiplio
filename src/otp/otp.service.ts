@@ -114,6 +114,78 @@ export class OtpService {
     return { user, otp };
   }
 
+  /**
+   * Returns the live OTP code for a reference (e.g. a shipment pickup), creating
+   * a fresh one when none is active. Used by the party that must *present* the
+   * code — the customer showing it to the driver at pickup.
+   */
+  async getOrCreateReferenceOtp(
+    userId: string | null,
+    email: string,
+    purpose: string,
+    referenceId: string,
+  ) {
+    const normalizedPurpose = purpose.toUpperCase();
+
+    const active = await (this.prisma as any).otp.findFirst({
+      where: {
+        purpose: normalizedPurpose,
+        referenceId,
+        isUsed: false,
+        expiresAt: { gt: new Date() },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (active) {
+      return { code: active.code, expiresAt: active.expiresAt };
+    }
+
+    await this.createAndSendOtp(userId, email, normalizedPurpose, referenceId);
+
+    const fresh = await (this.prisma as any).otp.findFirst({
+      where: { purpose: normalizedPurpose, referenceId, isUsed: false },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return { code: fresh.code, expiresAt: fresh.expiresAt };
+  }
+
+  /**
+   * Verifies an OTP against a reference id only — the caller checking the code
+   * (the driver) is not the user the OTP was issued to (the customer).
+   */
+  async verifyReferenceOtp(code: string, purpose: string, referenceId: string) {
+    const otp = await (this.prisma as any).otp.findFirst({
+      where: {
+        purpose: purpose.toUpperCase(),
+        referenceId,
+        code,
+        isUsed: false,
+        expiresAt: { gt: new Date() },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!otp) {
+      throw new BadRequestException('Invalid or expired OTP code');
+    }
+
+    await (this.prisma as any).otp.update({
+      where: { id: otp.id },
+      data: { isUsed: true },
+    });
+
+    return otp;
+  }
+
+  async invalidateReferenceOtps(purpose: string, referenceId: string) {
+    await (this.prisma as any).otp.updateMany({
+      where: { purpose: purpose.toUpperCase(), referenceId, isUsed: false },
+      data: { isUsed: true },
+    });
+  }
+
   async sendVerificationSuccessEmail(email: string, fullName: string): Promise<void> {
     await this.brevoService.sendVerificationSuccessEmail(email, fullName);
   }

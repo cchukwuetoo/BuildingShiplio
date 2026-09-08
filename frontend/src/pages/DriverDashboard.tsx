@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { driversAPI } from '../api.js'
 import ShipmentCard, { EmptyState } from '../components/ShipmentCard.js'
+import DriverPickupConfirm from '../components/DriverPickupConfirm.js'
 import { Shipment } from '../types.js'
 
 function getErrorMessage(error: unknown): string {
@@ -18,6 +19,7 @@ export default function DriverDashboard() {
   const [busyId, setBusyId] = useState<string | null>(null)
   const [notice, setNotice] = useState('')
   const [activeTab, setActiveTab] = useState<'available' | 'assigned'>('available')
+  const [confirming, setConfirming] = useState<Shipment | null>(null)
 
   useEffect(() => {
     void loadShipments()
@@ -59,6 +61,21 @@ export default function DriverDashboard() {
     .filter((s) => s.status === 'PICKUP_ASSIGNED' || s.status === 'PICKED_UP')
     .sort(byNewest)
   const visible = activeTab === 'available' ? availableShipments : assignedShipments
+
+  if (confirming) {
+    return (
+      <DriverPickupConfirm
+        shipment={confirming}
+        onCancel={() => setConfirming(null)}
+        onConfirmed={() => {
+          setConfirming(null)
+          setNotice('Pickup confirmed — the package is now in your care.')
+          setTimeout(() => setNotice(''), 3500)
+          void loadShipments()
+        }}
+      />
+    )
+  }
 
   return (
     <div>
@@ -143,21 +160,10 @@ export default function DriverDashboard() {
             ) : (
               <button
                 className="action-btn btn-primary"
-                disabled={shipment.status === 'PICKED_UP' || busyId === shipment.id}
-                onClick={() =>
-                  void runAction(
-                    shipment.id,
-                    () => driversAPI.markPickedUp(shipment.id),
-                    'Failed to mark as picked up',
-                    'Picked up — on its way to the warehouse.',
-                  )
-                }
+                disabled={shipment.status === 'PICKED_UP'}
+                onClick={() => setConfirming(shipment)}
               >
-                {shipment.status === 'PICKED_UP'
-                  ? 'Collected'
-                  : busyId === shipment.id
-                    ? 'Updating…'
-                    : 'Mark as picked up'}
+                {shipment.status === 'PICKED_UP' ? 'Collected' : 'Confirm pickup'}
               </button>
             )
           }

@@ -9,7 +9,8 @@ describe('ShipmentsService', () => {
   let prisma: any;
   let otpService: {
     createAndSendOtp: jest.Mock;
-    verifyOtp: jest.Mock;
+    getOrCreateReferenceOtp: jest.Mock;
+    invalidateReferenceOtps: jest.Mock;
   };
 
   beforeEach(async () => {
@@ -30,10 +31,11 @@ describe('ShipmentsService', () => {
         expiresAt: new Date(Date.now() + 10 * 60 * 1000),
         purpose: 'SHIPMENT_PICKUP',
       }),
-      verifyOtp: jest.fn().mockResolvedValue({
-        user: { id: 'user-1', email: 'john@example.com' },
-        otp: { id: 'otp-2', code: '654321', purpose: 'SHIPMENT_PICKUP' },
+      getOrCreateReferenceOtp: jest.fn().mockResolvedValue({
+        code: '654321',
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000),
       }),
+      invalidateReferenceOtps: jest.fn().mockResolvedValue(undefined),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -110,25 +112,38 @@ describe('ShipmentsService', () => {
     await expect(service.findOneForUser('user-1', 'shipment-2')).rejects.toThrow(ForbiddenException);
   });
 
-  it('verifies a shipment driver otp and sends a confirmation mail', async () => {
-    prisma.shipment!.findUnique = jest.fn().mockResolvedValue({
+  it('returns the pickup code for the shipment owner', async () => {
+    prisma.shipment!.findFirst = jest.fn().mockResolvedValue({
       id: 'shipment-1',
       userId: 'user-1',
+      status: 'PICKUP_ASSIGNED',
     });
     prisma.user!.findUnique = jest.fn().mockResolvedValue({
       id: 'user-1',
       email: 'john@example.com',
     });
 
-    const result = await service.verifyDriverOtp('user-1', 'shipment-1', '654321');
+    const result = await service.getPickupOtp('user-1', 'shipment-1');
 
-    expect(result.verified).toBe(true);
-    expect(result.message).toBe('Shipment OTP verified successfully');
-    expect(otpService.verifyOtp).toHaveBeenCalledWith(
+    expect(result.code).toBe('654321');
+    expect(result.shipmentId).toBe('shipment-1');
+    expect(otpService.getOrCreateReferenceOtp).toHaveBeenCalledWith(
+      'user-1',
       'john@example.com',
-      '654321',
       'SHIPMENT_PICKUP',
       'shipment-1',
+    );
+  });
+
+  it('does not expose a pickup code to a non-owner', async () => {
+    prisma.shipment!.findFirst = jest.fn().mockResolvedValue({
+      id: 'shipment-2',
+      userId: 'user-2',
+      status: 'PENDING',
+    });
+
+    await expect(service.getPickupOtp('user-1', 'shipment-2')).rejects.toThrow(
+      ForbiddenException,
     );
   });
 });

@@ -5,6 +5,7 @@ import Overview from './customer/Overview.js'
 import BookShipment from './customer/BookShipment.js'
 import MyShipments from './customer/MyShipments.js'
 import TrackShipment from './customer/TrackShipment.js'
+import PickupCode from './customer/PickupCode.js'
 import SettingsPage from './customer/Settings.js'
 import Support from './customer/Support.js'
 import { AuthUser } from '../types.js'
@@ -20,6 +21,7 @@ const VIEW_TITLES: Record<CustomerView, string> = {
   book: 'Book a shipment',
   shipments: 'My shipments',
   track: 'Track package',
+  pickup: 'Pickup code',
   settings: 'Settings',
   support: 'Help & support',
 }
@@ -55,6 +57,8 @@ export default function CustomerDashboard({ user, onLogout }: CustomerDashboardP
         return <MyShipments onNavigate={navigate} />
       case 'track':
         return <TrackShipment key={trackId ?? 'manual'} initialShipmentId={trackId} />
+      case 'pickup':
+        return <PickupCode key={trackId ?? 'pick'} initialShipmentId={trackId} />
       case 'settings':
         return <SettingsPage user={user} onLogout={onLogout} />
       case 'support':

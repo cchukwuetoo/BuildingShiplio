@@ -23,12 +23,16 @@ export class ShipmentsService {
         purpose: string,
         referenceId?: string,
       ) => Promise<any>;
-      verifyOtp: (
+      getOrCreateReferenceOtp: (
+        userId: string | null,
         email: string,
-        code: string,
         purpose: string,
-        referenceId?: string,
-      ) => Promise<any>;
+        referenceId: string,
+      ) => Promise<{ code: string; expiresAt: Date }>;
+      invalidateReferenceOtps: (
+        purpose: string,
+        referenceId: string,
+      ) => Promise<void>;
     },
   ) {}
 
@@ -126,16 +130,17 @@ export class ShipmentsService {
       );
     }
 
-    await (this.prisma as any).otp.updateMany({
-      where: { shipmentId, status: 'ACTIVE' },
-      data: { status: 'EXPIRED' },
-    });
+    await this.otpService.invalidateReferenceOtps('SHIPMENT_PICKUP', shipmentId);
 
     return this.prisma.shipment.findUnique({ where: { id: shipmentId } });
   }
 
-  async verifyDriverOtp(userId: string, shipmentId: string, code: string) {
-    const shipment = await this.prisma.shipment.findUnique({
+  /**
+   * The pickup code the customer shows the driver. Regenerated automatically if
+   * the previous one lapsed. Only available while the shipment still awaits pickup.
+   */
+  async getPickupOtp(userId: string, shipmentId: string) {
+    const shipment = await this.prisma.shipment.findFirst({
       where: { id: shipmentId },
     });
 
@@ -144,16 +149,28 @@ export class ShipmentsService {
     }
 
     if (shipment.userId !== userId) {
-      throw new ForbiddenException('Shipment does not belong to this user');
+      throw new ForbiddenException('You do not have access to this shipment');
+    }
+
+    if (
+      shipment.status !== ShipmentStatus.PENDING &&
+      shipment.status !== ShipmentStatus.PICKUP_ASSIGNED
+    ) {
+      throw new ConflictException('This shipment is no longer awaiting pickup');
     }
 
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    await this.otpService.verifyOtp(user?.email ?? '', code, 'SHIPMENT_PICKUP', shipmentId);
+    const otp = await this.otpService.getOrCreateReferenceOtp(
+      userId,
+      user?.email ?? '',
+      'SHIPMENT_PICKUP',
+      shipmentId,
+    );
 
     return {
-      message: 'Shipment OTP verified successfully',
-      verified: true,
       shipmentId,
+      code: otp.code,
+      expiresAt: otp.expiresAt,
     };
   }
 }
